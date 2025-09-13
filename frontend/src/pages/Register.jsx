@@ -5,6 +5,7 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL;
 
 const Register = () => {
+    console.log('VITE_API_URL:', API_URL);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
@@ -21,7 +22,8 @@ const Register = () => {
                 userId,
                 email,
                 password,
-                fullName
+                fullName,
+                skills: []
             };
             const response = await axios.post(`${API_URL}/register`, payload);
             if (response.data && response.data.token) {
@@ -38,7 +40,8 @@ const Register = () => {
     };
 
     return (
-        <div style={{maxWidth: 400, margin: '40px auto', padding: 20}}>
+    <div style={{maxWidth: 400, margin: '40px auto', padding: 20, background: '#fff', color: '#000', border: '2px solid #000', zIndex: 9999, position: 'relative'}}>
+            <div style={{marginBottom: 16, fontWeight: 'bold', color: 'red'}}>Register Page Rendered</div>
             <h2>Register</h2>
             <form onSubmit={handleSubmit}>
                 <div>

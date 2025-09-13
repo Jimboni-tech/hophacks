@@ -9,14 +9,18 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 // Register route
 router.post('/register', async (req, res) => {
   const { userId, email, password, fullName, skills } = req.body;
+  console.log('Register request body:', req.body);
   try {
+    console.log('Checking for existing user...');
     // Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ userId }, { email }] });
+  const existingUser = await User.findOne({ $or: [{ userId }, { email }] });
+  console.log('Existing user:', existingUser);
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+  // Hash password
+  console.log('Hashing password...');
+  const hashedPassword = await bcrypt.hash(password, 10);
     // Create user
     const user = new User({
       userId,
@@ -28,10 +32,12 @@ router.post('/register', async (req, res) => {
       completedProjects: [],
       interestedProjects: []
     });
+    console.log('Saving new user:', user);
     await user.save();
-    // Generate JWT token
-    const token = jwt.sign({ userId: user.userId, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
-    res.status(201).json({ message: 'User registered successfully', token, user });
+  // Generate JWT token
+  const token = jwt.sign({ userId: user.userId, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
+  console.log('Registration successful, token:', token);
+  res.status(201).json({ message: 'User registered successfully', token, user });
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ error: 'Registration failed', details: err.message });
