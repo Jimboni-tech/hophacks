@@ -15,16 +15,16 @@ const Login = () => {
         e.preventDefault();
         setError('');
         try {
-            const res = await axios.post(`${API_URL}/login`, { email, password });
-            localStorage.setItem('token', res.data.token);
-            // Fetch user profile
-            const profileRes = await axios.get(`${API_URL}/user/profile`, {
-                headers: { Authorization: `Bearer ${res.data.token}` }
-            });
-            localStorage.setItem('user', JSON.stringify(profileRes.data));
-            // notify other components that user changed
-            window.dispatchEvent(new Event('userChanged'));
-            navigate('/home');
+                const res = await axios.post(`${API_URL}/login`, { email, password });
+                localStorage.setItem('token', res.data.token);
+                // Fetch user profile
+                const profileRes = await axios.get(`${API_URL}/user/profile`, {
+                    headers: { Authorization: `Bearer ${res.data.token}` }
+                });
+                localStorage.setItem('user', JSON.stringify(profileRes.data));
+                // notify other components that user changed
+                window.dispatchEvent(new Event('userChanged'));
+                navigate('/home');
         } catch (err) {
             setError(err.response?.data?.error || 'Login failed');
         }
@@ -49,6 +49,8 @@ const Login = () => {
                         required
                         style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 15 }}
                     />
+
+                    
 
                     <label style={{ fontSize: 13, color: 'var(--muted)' }}>Password</label>
                     <input

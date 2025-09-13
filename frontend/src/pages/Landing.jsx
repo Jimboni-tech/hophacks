@@ -10,7 +10,7 @@ const Landing = () => {
           <p style={{ fontSize: 16, color: 'var(--muted)', maxWidth: 760 }}>Connect volunteers (students & newcomers) with short, mentored software and data tasks that help nonprofits build tools, dashboards, and workflows. Learn while contributing to meaningful projects.</p>
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             <Link to="/register" style={{ background: 'var(--accent)', color: '#fff', padding: '10px 16px', borderRadius: 8, textDecoration: 'none', fontWeight: 700 }}>Get Started — Volunteer</Link>
-            <Link to="/register" style={{ border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 16px', borderRadius: 8, textDecoration: 'none' }}>Post a Project — Nonprofit</Link>
+            <Link to="/register-company" style={{ border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 16px', borderRadius: 8, textDecoration: 'none' }}>Post a Project — Nonprofit</Link>
           </div>
         </div>
 

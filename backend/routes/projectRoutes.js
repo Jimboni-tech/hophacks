@@ -2,6 +2,9 @@ const express = require('express');
 const Project = require('../models/Project');
 
 const router = express.Router();
+const jwt = require('jsonwebtoken');
+const Company = require('../models/Company');
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 // GET /api/projects
 // Query: q, page=1, limit=10, sort=newest|oldest|name|relevance
@@ -65,6 +68,67 @@ router.get('/projects/:id', async (req, res) => {
   } catch (err) {
     console.error('Failed to fetch project by id', err);
     res.status(500).json({ error: 'Failed to fetch project' });
+  }
+});
+
+// POST /api/projects - create a new project (company only)
+router.post('/projects', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing or invalid authorization' });
+    const token = auth.slice('Bearer '.length);
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can create projects' });
+
+    // find company
+    const company = await Company.findOne({ companyId: payload.companyId });
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+
+    const { name, description, requiredSkills = [], estimatedTime } = req.body;
+    if (!name) return res.status(400).json({ error: 'Project name is required' });
+
+    const project = new Project({ name, description, requiredSkills, estimatedTime, company: company._id });
+    await project.save();
+
+    // attach to company.projects
+    company.projects = company.projects || [];
+    company.projects.push(project._id);
+    await company.save();
+
+    res.status(201).json({ message: 'Project created', project });
+  } catch (err) {
+    console.error('Failed to create project', err);
+    res.status(500).json({ error: 'Failed to create project' });
+  }
+});
+
+// GET /api/company/projects - list projects for the authenticated company
+router.get('/company/projects', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing or invalid authorization' });
+    const token = auth.slice('Bearer '.length);
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can access this endpoint' });
+
+    const company = await Company.findOne({ companyId: payload.companyId });
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+
+    const projects = await Project.find({ company: company._id }).sort({ createdAt: -1 }).lean();
+    res.json({ data: projects });
+  } catch (err) {
+    console.error('Failed to list company projects', err);
+    res.status(500).json({ error: 'Failed to list company projects' });
   }
 });
 

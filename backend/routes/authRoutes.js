@@ -135,36 +135,59 @@ router.get('/auth/github/callback', async (req, res) => {
 
 // Register route
 router.post('/register', async (req, res) => {
-  const { userId, email, password, fullName, skills } = req.body;
+  const { userId, email, password, fullName, skills, isCompany } = req.body;
   console.log('Register request body:', req.body);
   try {
     console.log('Checking for existing user...');
     // Check if user already exists
-  const existingUser = await User.findOne({ $or: [{ userId }, { email }] });
-  console.log('Existing user:', existingUser);
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+    if (isCompany) {
+      // register company
+      const Company = require('../models/Company');
+      const existing = await Company.findOne({ $or: [{ companyId: userId }, { email }] });
+      if (existing) return res.status(400).json({ error: 'Company already exists' });
+      const companyId = userId || require('crypto').randomBytes(8).toString('hex');
+      const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+      // generate a URL-friendly slug from the provided name or fallback to companyId
+      const slugBase = (fullName || companyId || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || companyId;
+      let slug = slugBase;
+      // ensure slug uniqueness by appending short suffixes if needed
+      let attempt = 0;
+      while (await Company.findOne({ slug })) {
+        attempt += 1;
+        slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
+        if (attempt > 6) break;
+      }
+      const company = new Company({ companyId, name: fullName || '', slug, email, password: hashedPassword, projects: [] });
+      await company.save();
+      const token = jwt.sign({ companyId: company.companyId, email: company.email, company: true }, JWT_SECRET, { expiresIn: '1d' });
+      return res.status(201).json({ message: 'Company registered', token, company });
     }
-  // Hash password
-  console.log('Hashing password...');
-  const hashedPassword = await bcrypt.hash(password, 10);
-    // Create user
-    const user = new User({
-      userId,
-      email,
-      password: hashedPassword,
-      fullName,
-      skills,
-      resume: {},
-      completedProjects: [],
-      interestedProjects: []
-    });
-    console.log('Saving new user:', user);
-    await user.save();
-  // Generate JWT token
-  const token = jwt.sign({ userId: user.userId, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
-  console.log('Registration successful, token:', token);
-  res.status(201).json({ message: 'User registered successfully', token, user });
+
+    const existingUser = await User.findOne({ $or: [{ userId }, { email }] });
+    console.log('Existing user:', existingUser);
+      if (existingUser) {
+        return res.status(400).json({ error: 'User already exists' });
+      }
+    // Hash password
+    console.log('Hashing password...');
+    const hashedPassword = await bcrypt.hash(password, 10);
+      // Create user
+      const user = new User({
+        userId,
+        email,
+        password: hashedPassword,
+        fullName,
+        skills,
+        resume: {},
+        completedProjects: [],
+        interestedProjects: []
+      });
+      console.log('Saving new user:', user);
+      await user.save();
+    // Generate JWT token
+    const token = jwt.sign({ userId: user.userId, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
+    console.log('Registration successful, token:', token);
+    res.status(201).json({ message: 'User registered successfully', token, user });
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ error: 'Registration failed', details: err.message });
@@ -173,21 +196,30 @@ router.post('/register', async (req, res) => {
 
 // Login route
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, asCompany } = req.body;
   try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    // Generate JWT token
-    const token = jwt.sign({ userId: user.userId, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
-    res.json({ message: 'Login successful', token, user });
-  } catch (err) {
-    res.status(500).json({ error: 'Login failed' });
+      if (asCompany) {
+        const Company = require('../models/Company');
+        const company = await Company.findOne({ email });
+        if (!company) return res.status(404).json({ error: 'Company not found' });
+        const isMatch = await bcrypt.compare(password, company.password || '');
+        if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+        const token = jwt.sign({ companyId: company.companyId, email: company.email, company: true }, JWT_SECRET, { expiresIn: '1d' });
+        return res.json({ message: 'Login successful', token, company });
+      }
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+      // Generate JWT token
+      const token = jwt.sign({ userId: user.userId, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
+      res.json({ message: 'Login successful', token, user });
+    } catch (err) {
+      res.status(500).json({ error: 'Login failed' });
   }
 });
 

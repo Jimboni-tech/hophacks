@@ -44,7 +44,7 @@ const Profile = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.dispatchEvent(new Event('userChanged'));
-    navigate('/login');
+    navigate('/');
   };
 
   const addSkill = () => {
@@ -225,6 +225,9 @@ const Profile = () => {
                   }} style={{ padding: '8px 12px', borderRadius: 6, background: '#24292e', color: '#fff', border: 'none' }}>Connect GitHub</button>
                 </>
               )}
+              <div style={{ marginLeft: 'auto' }}>
+                <button onClick={() => window.location.href = '/recommendations'} style={{ padding: '8px 12px', borderRadius: 6, background: '#16a34a', color: '#fff', border: 'none' }}>Suggest Projects</button>
+              </div>
             </div>
           </section>
           

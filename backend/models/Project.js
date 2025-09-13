@@ -10,6 +10,9 @@ const projectSchema = new mongoose.Schema({
   uiUrl: String,
   interestedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   appliedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  ,
+  // optional cached embedding for the project description (vector of floats)
+  embedding: { type: [Number], index: '2dsphere', default: undefined }
 }, { timestamps: true });
 
 // Optional: text index to speed up searches across fields

@@ -39,6 +39,7 @@ const Navbar = () => {
       return false;
     }
   });
+  const [isCompanySession, setIsCompanySession] = useState(false);
 
   useEffect(() => {
     // load current user fullName and login state from localStorage
@@ -48,6 +49,23 @@ const Navbar = () => {
         const user = userStr ? JSON.parse(userStr) : null;
         setFullName(user?.fullName || '');
         setIsLoggedIn(Boolean(localStorage.getItem('token') || user));
+        // detect company flag from token payload (no verification)
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1]));
+              setIsCompanySession(Boolean(payload && payload.company));
+            } else {
+              setIsCompanySession(false);
+            }
+          } catch (e) {
+            setIsCompanySession(false);
+          }
+        } else {
+          setIsCompanySession(false);
+        }
       } catch {
         setFullName('');
         setIsLoggedIn(Boolean(localStorage.getItem('token')));
@@ -83,8 +101,8 @@ const Navbar = () => {
     };
   }, []);
 
-  // If user is not logged in, don't render the navbar
-  if (!isLoggedIn) return null;
+  // if not logged in, render a minimal navbar
+  // (so companies/users can reach landing, register, login)
 
   const FallbackIcon = ({ size = 32 }) => (
     <svg
@@ -119,67 +137,30 @@ const Navbar = () => {
             boxShadow: 'none',
           }}
         >
-          <NavLink
-            to="/home"
-            style={({ isActive }) => ({
-              ...linkStyle,
-              color: isActive ? 'var(--accent)' : 'var(--text)',
-              textDecoration: isActive ? 'underline' : 'none',
-              textUnderlineOffset: 6,
-              background: 'transparent',
-              boxShadow: 'none',
-              borderRadius: linkStyle.borderRadius,
-            })}
-          >
-            Home
-          </NavLink>
-          <NavLink
-            to="/organizations"
-            style={({ isActive }) => ({
-              ...linkStyle,
-              color: isActive ? 'var(--accent)' : 'var(--text)',
-              textDecoration: isActive ? 'underline' : 'none',
-              textUnderlineOffset: 6,
-              background: 'transparent',
-              boxShadow: 'none',
-              borderRadius: linkStyle.borderRadius,
-            })}
-          >
-            Organizations
-          </NavLink>
-          <NavLink
-            to="/recent"
-            style={({ isActive }) => ({
-              ...linkStyle,
-              color: isActive ? 'var(--accent)' : 'var(--text)',
-              textDecoration: isActive ? 'underline' : 'none',
-              textUnderlineOffset: 6,
-              background: 'transparent',
-              boxShadow: 'none',
-              borderRadius: linkStyle.borderRadius,
-            })}
-          >
-            Recents
-          </NavLink>
-          <NavLink
-            to="/stats"
-            style={({ isActive }) => ({
-              ...linkStyle,
-              color: isActive ? 'var(--accent)' : 'var(--text)',
-              textDecoration: isActive ? 'underline' : 'none',
-              textUnderlineOffset: 6,
-              background: 'transparent',
-              boxShadow: 'none',
-              borderRadius: linkStyle.borderRadius,
-            })}
-          >
-            Stats
-          </NavLink>
+          {isCompanySession ? (
+            <>
+              <NavLink to="/company/projects/new" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Post Project</NavLink>
+              <NavLink to="/company/projects" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Manage Projects</NavLink>
+              <NavLink to="/company/applicants" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Review Applicants</NavLink>
+            </>
+          ) : isLoggedIn ? (
+            <>
+              <NavLink to="/home" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Home</NavLink>
+              <NavLink to="/organizations" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Organizations</NavLink>
+              <NavLink to="/recent" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Recents</NavLink>
+              <NavLink to="/stats" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Stats</NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink to="/" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Landing</NavLink>
+              <NavLink to="/projects" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Browse</NavLink>
+            </>
+          )}
         </div>
 
         {/* profile icon slightly inset from the right edge */}
       <div style={{ position: 'absolute', right: 100, display: 'flex', alignItems: 'center', height: '64px', zIndex: 1100, overflow: 'visible' }}>
-        <NavLink to="/profile" aria-label="Profile" style={{ color: 'var(--accent-600)', display: 'inline-flex', alignItems: 'center', height: '64px' }}>
+        <NavLink to={isCompanySession ? '/company/profile' : '/profile'} aria-label="Profile" style={{ color: 'var(--accent-600)', display: 'inline-flex', alignItems: 'center', height: '64px' }}>
           {Icon ? <Icon size={36} color="var(--accent-600)" /> : <FallbackIcon size={36} />}
         </NavLink>
       </div>

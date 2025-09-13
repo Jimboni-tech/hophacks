@@ -4,6 +4,10 @@ const Submission = require('../models/Submission');
 const Project = require('../models/Project');
 
 const router = express.Router();
+const jwt = require('jsonwebtoken');
+const Company = require('../models/Company');
+const User = require('../models/User');
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 // POST /api/projects/:projectId/submissions
 // Body: { userId, submissionUrl, notes }
@@ -90,6 +94,56 @@ router.get('/leaderboard', async (req, res) => {
   } catch (err) {
     console.error('Failed to fetch leaderboard', err);
     res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// GET /api/company/submissions - recent submissions for company-owned projects
+router.get('/company/submissions', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing or invalid authorization' });
+    const token = auth.slice('Bearer '.length);
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can access this endpoint' });
+
+    const company = await Company.findOne({ companyId: payload.companyId });
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+
+    // find submissions for projects owned by this company
+    const projects = await Project.find({ company: company._id }).select('_id name').lean();
+    const projectIds = projects.map(p => p._id);
+    const submissions = await Submission.find({ project: { $in: projectIds } })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    // fetch user full names for the submission userIds
+    const userIds = [...new Set(submissions.map(s => s.userId))];
+    const users = await User.find({ userId: { $in: userIds } }).select('userId fullName').lean();
+    const userMap = Object.fromEntries(users.map(u => [u.userId, u.fullName]));
+    const projectMap = Object.fromEntries(projects.map(p => [String(p._id), p.name]));
+
+    const data = submissions.map(s => ({
+      id: s._id,
+      projectId: s.project,
+      projectName: projectMap[String(s.project)] || 'Unknown project',
+      userId: s.userId,
+      userFullName: userMap[s.userId] || s.userId,
+      createdAt: s.createdAt,
+      status: s.status,
+      submissionUrl: s.submissionUrl,
+      notes: s.notes
+    }));
+
+    res.json({ data });
+  } catch (err) {
+    console.error('Failed to list company submissions', err);
+    res.status(500).json({ error: 'Failed to list company submissions' });
   }
 });
 

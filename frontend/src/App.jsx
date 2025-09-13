@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import RegisterCompany from './pages/RegisterCompany';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
 import Navbar from './components/Navbar';
@@ -14,6 +15,10 @@ import OrganizationDetail from './pages/OrganizationDetail';
 import ProfileSetup from './pages/ProfileSetup';
 import GithubCallback from './pages/GithubCallback';
 import ProtectedRoute from './components/ProtectedRoute';
+import Recommendations from './pages/Recommendations';
+import PostProject from './pages/company/PostProject';
+import CompanyLogin from './pages/company/CompanyLogin';
+import ManageProjects from './pages/company/ManageProjects';
 
 function App() {
   return (
@@ -29,11 +34,17 @@ function App() {
           <Route path="/recent" element={<ProtectedRoute><Recent /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/setup-profile" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
+          <Route path="/recommendations" element={<ProtectedRoute><Recommendations /></ProtectedRoute>} />
           <Route path="/auth/github/callback" element={<GithubCallback />} />
           <Route path="/projects/:id" element={<ProtectedRoute><ProjectInformation /></ProtectedRoute>} />
 
+          <Route path="/company/projects/new" element={<ProtectedRoute requireCompany><PostProject /></ProtectedRoute>} />
+
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/register-company" element={<RegisterCompany />} />
+          <Route path="/company/login" element={<CompanyLogin />} />
+          <Route path="/company/projects" element={<ProtectedRoute requireCompany><ManageProjects /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
