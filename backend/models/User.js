@@ -21,6 +21,13 @@ const userSchema = new mongoose.Schema({
   completedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   interestedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   appliedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
+  currentProjects: [{
+    projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+    submissionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Submission' },
+    movedAt: { type: Date },
+    completionRequested: { type: Boolean, default: false },
+    completionRequestedAt: { type: Date }
+  }],
   createdAt: { type: Date, default: Date.now }
 });
 

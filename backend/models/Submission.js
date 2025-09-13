@@ -11,6 +11,12 @@ const submissionSchema = new mongoose.Schema({
   reviewedAt: { type: Date },
   reviewer: { type: String },
   rejectReason: { type: String },
+  // completion workflow
+  completionRequested: { type: Boolean, default: false },
+  completionRequestedAt: { type: Date },
+  completionVerified: { type: Boolean, default: false },
+  completionVerifiedAt: { type: Date },
+  completionVerifier: { type: String },
 }, { timestamps: true });
 
 const Submission = mongoose.model('Submission', submissionSchema);

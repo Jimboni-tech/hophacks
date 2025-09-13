@@ -6,8 +6,7 @@ const projectSchema = new mongoose.Schema({
   description: String,
   requiredSkills: [String],
   estimatedTime: String, // e.g., '2 weeks', '40 hours', etc.
-  datasetUrl: String,
-  uiUrl: String,
+  githubUrl: String,
   interestedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   appliedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
   ,

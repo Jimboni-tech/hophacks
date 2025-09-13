@@ -46,11 +46,8 @@ const ProjectInformation = () => {
           )}
         </div>
       )}
-      {project.datasetUrl && (
-        <div><strong>Dataset:</strong> <a href={project.datasetUrl} target="_blank" rel="noopener noreferrer">{project.datasetUrl}</a></div>
-      )}
-      {project.uiUrl && (
-        <div><strong>UI:</strong> <a href={project.uiUrl} target="_blank" rel="noopener noreferrer">{project.uiUrl}</a></div>
+      {project.githubUrl && (
+        <div><strong>Repository:</strong> <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">{project.githubUrl}</a></div>
       )}
       <div style={{ marginTop: 24 }}>
         <strong>Interested Users:</strong> {project.interestedUsers?.length || 0}
@@ -80,14 +77,22 @@ const ProjectInformation = () => {
 
         <button onClick={async () => {
           const token = localStorage.getItem('token');
-          if (!token) return alert('Please login to apply');
+          const userStr = localStorage.getItem('user');
+          if (!token || !userStr) return alert('Please log in as a user to apply');
           try {
-            // call backend apply endpoint
-            await axios.post(`${API_URL}/user/apply/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
-            // refresh project
+            const user = JSON.parse(userStr);
+            const userId = user.userId || user.userId;
+            // prompt for submission URL and notes (quick UX)
+            const defaultUrl = project.githubUrl || '';
+            const submissionUrl = window.prompt('Submission URL (link to resume / repo / gist):', defaultUrl);
+            if (!submissionUrl) return alert('Submission cancelled');
+            const notes = window.prompt('Optional message / notes for the company:', '');
+            // post submission
+            await axios.post(`${API_URL}/projects/${id}/submissions`, { userId, submissionUrl, notes });
+            // refresh project interested count
             const res = await axios.get(`${API_URL}/projects/${id}`);
             setProject(res.data);
-            // refresh profile and store
+            // refresh profile and store (to update appliedProjects etc.)
             try {
               const profileRes = await axios.get(`${API_URL}/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
               localStorage.setItem('user', JSON.stringify(profileRes.data));
@@ -95,10 +100,11 @@ const ProjectInformation = () => {
             } catch (e) {
               // ignore profile refresh errors
             }
-            if (project.uiUrl) window.open(project.uiUrl, '_blank', 'noopener');
-            else alert('Applied — no external apply link available');
+            alert('Application submitted — the company will be notified.');
           } catch (e) {
-            alert('Failed to apply');
+            // show server error message when available
+            const msg = e?.response?.data?.error || e.message || 'Failed to submit application';
+            alert(msg);
           }
         }} style={{ padding: '8px 12px', background: '#2b8aef', color: '#fff', border: 'none', borderRadius: 4 }}>Apply</button>
       </div>

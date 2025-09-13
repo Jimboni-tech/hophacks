@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
+function makeApiUrl(path) {
+  const base = (API_URL || '').replace(/\/$/, '');
+  if (!base) return `/api${path}`;
+  if (base.endsWith('/api')) return `${base}${path}`;
+  return `${base}/api${path}`;
+}
+
 const ManageProjects = () => {
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState('');
@@ -11,9 +20,10 @@ const ManageProjects = () => {
     const fetchProjects = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('/api/company/projects', { headers: { Authorization: token ? `Bearer ${token}` : '' } });
-        const json = await res.json();
+  const token = localStorage.getItem('token');
+  const url = makeApiUrl('/company/projects');
+  const res = await fetch(url, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
+  const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Failed to load');
         setProjects(json.data || []);
       } catch (err) {

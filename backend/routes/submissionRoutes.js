@@ -6,6 +6,7 @@ const Project = require('../models/Project');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Company = require('../models/Company');
+const { sendMail } = require('../lib/email');
 const User = require('../models/User');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
@@ -79,6 +80,59 @@ router.patch('/submissions/:id', async (req, res) => {
   }
 });
 
+// POST /api/submissions/:id/complete-request - user requests completion verification
+router.post('/submissions/:id/complete-request', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing or invalid authorization' });
+    const token = auth.slice('Bearer '.length);
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    // only users (not companies) can request completion
+    if (payload.company) return res.status(403).json({ error: 'Companies cannot request completion' });
+
+    const submission = await Submission.findById(id);
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+    // verify the submission belongs to this user
+    if (submission.userId !== payload.userId) return res.status(403).json({ error: 'Not your submission' });
+
+    submission.completionRequested = true;
+    submission.completionRequestedAt = new Date();
+    await submission.save();
+    // notify the company that owns the project
+    try {
+      const project = await Project.findById(submission.project).populate('company', 'name email').lean();
+      const user = await User.findOne({ userId: payload.userId }).select('fullName userId').lean();
+      const userName = (user && user.fullName) || payload.userId;
+      if (project && project.company && project.company.email) {
+        const companyEmail = project.company.email;
+        const subject = `Completion requested for project: ${project.name}`;
+        const projectLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/projects/${String(project._id)}`;
+        const submissionLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/submissions/${String(submission._id)}`;
+        const html = `<p>The user <strong>${userName}</strong> has requested verification that they completed the project <strong>${project.name}</strong>.</p>
+        <p>Project: <a href="${projectLink}">${project.name}</a></p>
+        <p>Submission: <a href="${submissionLink}">View submission</a></p>
+        <p>Please review the submission and verify completion in your dashboard.</p>`;
+        // send email (best-effort)
+        const sent = await sendMail({ to: companyEmail, subject, html });
+        if (sent && sent.previewUrl) console.log('Preview email URL:', sent.previewUrl);
+      }
+    } catch (e) {
+      console.error('Failed to notify company about completion request', e);
+    }
+
+    return res.json({ success: true, submission });
+  } catch (err) {
+    console.error('Failed to request completion', err);
+    return res.status(500).json({ error: 'Failed to request completion' });
+  }
+});
+
 // GET /api/leaderboard?limit=10
 // Returns top userIds by approved submissions count
 router.get('/leaderboard', async (req, res) => {
@@ -147,4 +201,58 @@ router.get('/company/submissions', async (req, res) => {
   }
 });
 
+// GET /api/company/applicant/:userId - company can fetch applicant profile (name, email, skills, github)
+router.get('/company/applicant/:userId', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing or invalid authorization' });
+    const token = auth.slice('Bearer '.length);
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can access this endpoint' });
+
+    const { userId } = req.params;
+    const user = await User.findOne({ userId }).select('userId fullName email skills github resume').lean();
+    if (!user) return res.status(404).json({ error: 'Applicant not found' });
+    // don't return the binary resume data here; provide a separate resume endpoint
+    const { resume, ...rest } = user;
+    return res.json({ data: rest });
+  } catch (err) {
+    console.error('Failed to fetch applicant profile', err);
+    return res.status(500).json({ error: 'Failed to fetch applicant profile' });
+  }
+});
+
+// GET /api/company/applicant/:userId/resume - company can download applicant resume (if present)
+router.get('/company/applicant/:userId/resume', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing or invalid authorization' });
+    const token = auth.slice('Bearer '.length);
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can access this endpoint' });
+
+    const { userId } = req.params;
+    const user = await User.findOne({ userId }).select('resume').lean();
+    if (!user || !user.resume || !user.resume.data) return res.status(404).json({ error: 'No resume available' });
+    const filename = (user.resume.filename || 'resume.pdf').replace(/"/g, '');
+    res.setHeader('Content-Type', user.resume.contentType || 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    return res.send(user.resume.data);
+  } catch (err) {
+    console.error('Failed to fetch applicant resume', err);
+    return res.status(500).json({ error: 'Failed to fetch applicant resume' });
+  }
+});
+
 module.exports = router;
+

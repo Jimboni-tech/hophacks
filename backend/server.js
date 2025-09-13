@@ -8,6 +8,7 @@ const userApplyRoutes = require('./routes/userApplyRoutes');
 const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const companyRoutes = require('./routes/companyRoutes');
+const submissionRoutes = require('./routes/submissionRoutes');
 const recommendationsRoutes = require('./routes/recommendations');
 const statsRoutes = require('./routes/statsRoutes');
 
@@ -36,6 +37,7 @@ app.use('/api', userApplyRoutes);
 app.use('/api', authRoutes);
 app.use('/api', projectRoutes);
 app.use('/api', companyRoutes);
+app.use('/api', submissionRoutes);
 app.use('/api', recommendationsRoutes);
 app.use('/api', statsRoutes);
 

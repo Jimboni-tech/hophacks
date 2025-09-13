@@ -102,6 +102,21 @@ router.get('/user/profile', async (req, res) => {
   }
 });
 
+// GET /api/user/submissions - list submissions for authenticated user
+router.get('/user/submissions', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '') || req.query.token || req.headers['x-access-token'];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const submissions = await require('../models/Submission').find({ userId: decoded.userId }).populate('project', 'name description').sort({ createdAt: -1 }).lean();
+    const data = submissions.map(s => ({ id: s._id, projectId: s.project?._id, projectName: s.project?.name || 'Unknown', projectDescription: s.project?.description || '', status: s.status, createdAt: s.createdAt, submissionUrl: s.submissionUrl, notes: s.notes }));
+    res.json({ data });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token', details: err.message });
+  }
+});
+
 // POST /api/user/interested/:projectId - add project to authenticated user's interestedProjects
 router.post('/user/interested/:projectId', async (req, res) => {
   const authHeader = req.headers.authorization || '';
@@ -129,6 +144,43 @@ router.post('/user/interested/:projectId', async (req, res) => {
     res.json({ message: 'Project marked as interested', interestedProjects: user.interestedProjects });
   } catch (err) {
     res.status(401).json({ error: 'Invalid token', details: err.message });
+  }
+});
+
+// POST /api/user/current/:projectId - move a project from appliedProjects to currentProjects
+router.post('/user/current/:projectId', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '') || req.query.token || req.headers['x-access-token'];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const projectId = req.params.projectId;
+    const user = await User.findOne({ userId: decoded.userId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // ensure the user had applied to the project or allow moving if not
+    const appliedIndex = user.appliedProjects.findIndex(p => String(p) === String(projectId));
+    if (appliedIndex === -1) {
+      // still allow adding to current, but warn in response
+    } else {
+      // remove from appliedProjects
+      user.appliedProjects.splice(appliedIndex, 1);
+    }
+
+    // find related submission to capture submissionId if available
+    const Submission = require('../models/Submission');
+    const submission = await Submission.findOne({ project: projectId, userId: decoded.userId, status: { $in: ['pending', 'approved'] } }).sort({ createdAt: -1 }).lean();
+
+    // add to currentProjects (avoid duplicates)
+    if (!user.currentProjects.some(c => String(c.projectId) === String(projectId))) {
+      user.currentProjects.unshift({ projectId, submissionId: submission?._id || null, movedAt: new Date() });
+    }
+
+    await user.save();
+
+  return res.json({ success: true, currentProjects: user.currentProjects, appliedProjects: user.appliedProjects.map(p => String(p)) });
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token', details: err.message });
   }
 });
 

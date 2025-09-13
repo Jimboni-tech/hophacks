@@ -67,14 +67,13 @@ const Home = () => {
                 </div>
             )}
             {/* Main content container — entire page scrolls naturally */}
-            <div style={{
+                <div style={{
                 maxWidth: 760,
                 margin: '0 auto',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '20px',
-                boxSizing: 'border-box',
                 boxSizing: 'border-box',
                 paddingTop: 24,
                 paddingBottom: 24

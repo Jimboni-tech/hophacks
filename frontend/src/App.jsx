@@ -19,6 +19,8 @@ import Recommendations from './pages/Recommendations';
 import PostProject from './pages/company/PostProject';
 import CompanyLogin from './pages/company/CompanyLogin';
 import ManageProjects from './pages/company/ManageProjects';
+import ReviewApplicants from './pages/company/ReviewApplicants';
+import CompanyProfile from './pages/company/CompanyProfile';
 
 function App() {
   return (
@@ -45,6 +47,8 @@ function App() {
           <Route path="/register-company" element={<RegisterCompany />} />
           <Route path="/company/login" element={<CompanyLogin />} />
           <Route path="/company/projects" element={<ProtectedRoute requireCompany><ManageProjects /></ProtectedRoute>} />
+          <Route path="/company/applicants" element={<ProtectedRoute requireCompany><ReviewApplicants /></ProtectedRoute>} />
+          <Route path="/company/profile" element={<ProtectedRoute requireCompany><CompanyProfile /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

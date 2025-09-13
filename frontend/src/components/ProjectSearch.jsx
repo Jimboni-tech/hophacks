@@ -111,14 +111,9 @@ const ProjectSearch = () => {
               {p.description && (
                 <p className="text-sm mt-2 text-gray-700">{p.description}</p>
               )}
-              {(p.datasetUrl || p.uiUrl) && (
+              {p.githubUrl && (
                 <div className="flex gap-3 mt-2 text-sm">
-                  {p.datasetUrl && (
-                    <a className="text-blue-600 underline" href={p.datasetUrl} target="_blank" rel="noreferrer">Dataset</a>
-                  )}
-                  {p.uiUrl && (
-                    <a className="text-blue-600 underline" href={p.uiUrl} target="_blank" rel="noreferrer">Open UI</a>
-                  )}
+                  <a className="text-blue-600 underline" href={p.githubUrl} target="_blank" rel="noreferrer">Repository</a>
                 </div>
               )}
               <SubmissionForm projectId={p._id} />

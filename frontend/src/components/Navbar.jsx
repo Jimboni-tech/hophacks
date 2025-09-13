@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 const navStyle = {
   width: '100%',
@@ -30,6 +30,11 @@ const linkStyle = {
 
 
 const Navbar = () => {
+  const location = useLocation();
+
+  // hide navbar on the landing and auth pages
+  const HIDDEN_PATHS = ['/', '/login', '/register', '/company/login', '/register-company'];
+  if (location && HIDDEN_PATHS.includes(location.pathname)) return null;
   const [fullName, setFullName] = useState('');
   const [Icon, setIcon] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(() => {

@@ -5,6 +5,26 @@ const Project = require('../models/Project');
 
 const router = express.Router();
 
+// lightweight middleware to verify company JWT token from Authorization header
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+
+function requireCompanyAuth(req, res, next) {
+  try {
+    const auth = req.headers.authorization || req.headers.Authorization || '';
+    if (!auth) return res.status(401).json({ error: 'Missing authorization' });
+    const parts = auth.split(' ');
+    const token = parts.length === 2 && parts[0].toLowerCase() === 'bearer' ? parts[1] : parts[0];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded || !decoded.companyId) return res.status(401).json({ error: 'Invalid token' });
+    req.companyPayload = decoded;
+    return next();
+  } catch (err) {
+    console.error('Company auth failed', err && err.message);
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+}
+
 // GET /api/companies - list companies
 // Response: { data: [ { _id, name, description } ] }
 router.get('/companies', async (req, res) => {
@@ -90,6 +110,20 @@ router.get('/companies/:id/projects', async (req, res) => {
   } catch (err) {
     console.error('Failed to fetch company projects', err);
     return res.status(500).json({ error: 'Failed to fetch company projects' });
+  }
+});
+
+// GET /api/company/me - return the currently authenticated company (requires company JWT)
+router.get('/company/me', requireCompanyAuth, async (req, res) => {
+  try {
+    const { companyId } = req.companyPayload || {};
+    if (!companyId) return res.status(400).json({ error: 'Invalid token payload' });
+    const company = await Company.findOne({ companyId }).select('-password').lean();
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    return res.json({ data: company });
+  } catch (err) {
+    console.error('Failed to fetch company me', err);
+    return res.status(500).json({ error: 'Failed to fetch company' });
   }
 });
 
