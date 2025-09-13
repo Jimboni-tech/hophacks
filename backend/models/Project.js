@@ -8,7 +8,8 @@ const projectSchema = new mongoose.Schema({
   estimatedTime: String, // e.g., '2 weeks', '40 hours', etc.
   datasetUrl: String,
   uiUrl: String,
-  interestedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  interestedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  appliedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
 // Optional: text index to speed up searches across fields

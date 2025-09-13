@@ -17,11 +17,14 @@ router.get('/projects', async (req, res) => {
     // Build filter and base query
     let filter = {};
     if (hasQuery) {
-      // Use text search when possible (name/description) fall back to regex for skills
+      // Use a regex-based search across name, description and requiredSkills.
+      // Avoid mixing $text and regex in the same $or to prevent Mongo planner failures.
+      const regex = { $regex: String(q), $options: 'i' };
       filter = {
         $or: [
-          { $text: { $search: String(q) } },
-          { requiredSkills: { $elemMatch: { $regex: String(q), $options: 'i' } } },
+          { name: regex },
+          { description: regex },
+          { requiredSkills: { $elemMatch: regex } },
         ],
       };
     }
@@ -30,13 +33,12 @@ router.get('/projects', async (req, res) => {
     let sortSpec = { createdAt: -1 };
     if (sort === 'oldest') sortSpec = { createdAt: 1 };
     else if (sort === 'name') sortSpec = { name: 1 };
-    else if (sort === 'relevance' && hasQuery) sortSpec = { score: { $meta: 'textScore' } };
+    // Note: textScore-based relevance requires $text; since we use regex search to avoid
+    // planner issues, we don't provide a textScore sort here. 'relevance' will fall back
+    // to default newest sort when using regex search.
 
     // Base query
-    let queryExec = Project.find(filter).populate('company', 'name');
-    if (sort === 'relevance' && hasQuery) {
-      queryExec = Project.find(filter, { score: { $meta: 'textScore' } }).populate('company', 'name');
-    }
+    const queryExec = Project.find(filter).populate('company', 'name');
 
     const total = await Project.countDocuments(filter);
     const totalPages = Math.max(Math.ceil(total / pageSize), 1);

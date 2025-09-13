@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
   },
   completedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   interestedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
+  appliedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   createdAt: { type: Date, default: Date.now }
 });
 

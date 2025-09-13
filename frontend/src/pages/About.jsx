@@ -1,10 +1,10 @@
 import React from 'react';
 
-const About = () => (
-  <div style={{maxWidth: 600, margin: '80px auto', padding: 24}}>
-    <h2>About</h2>
-    <p>This is the About page. Add information about your app, mission, or organization here.</p>
+const Organizations = () => (
+  <div style={{maxWidth: 700, margin: '80px auto', padding: 24}}>
+    <h2>Organizations</h2>
+    <p>List of organizations and partners. You can add organization profiles, links, and descriptions here.</p>
   </div>
 );
 
-export default About;
+export default Organizations;

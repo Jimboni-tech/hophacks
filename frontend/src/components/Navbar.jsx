@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 
 const navStyle = {
   width: '100%',
-  background: '#222',
-  color: '#fff',
+  background: '#ffffff',
+  color: '#213547',
   padding: '12px 0',
   display: 'flex',
   justifyContent: 'center',
@@ -13,10 +13,11 @@ const navStyle = {
   top: 0,
   left: 0,
   zIndex: 1000,
+  boxShadow: '0 1px 0 rgba(0,0,0,0.06)'
 };
 
 const linkStyle = {
-  color: '#fff',
+  color: '#213547',
   textDecoration: 'none',
   margin: '0 24px',
   fontSize: 18,
@@ -90,15 +91,15 @@ const Navbar = () => {
       {/* absolutely centered links so they don't shift when left/right change */}
       <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center' }}>
         <Link to="/home" style={linkStyle}>Home</Link>
-        <Link to="/about" style={linkStyle}>About</Link>
+  <Link to="/organizations" style={linkStyle}>Organizations</Link>
         <Link to="/recent" style={linkStyle}>Recents</Link>
         <Link to="/leaderboard" style={linkStyle}>Leaderboard</Link>
       </div>
 
       <div style={{ marginLeft: 'auto', position: 'relative' }}>
-        <Link to="/profile" style={{ color: '#fff', display: 'inline-flex', alignItems: 'center' }}>
+        <Link to="/profile" style={{ color: '#213547', display: 'inline-flex', alignItems: 'center' }}>
           {Icon ? <Icon size={32} /> : <FallbackIcon size={32} />}
-          <span style={{marginLeft: 30, fontSize: 12, opacity: 0.85}}>
+          <span style={{marginLeft: 30, fontSize: 12, color: 'rgba(33,53,71,0.6)'}}>
             {Icon ? 'icon' : 'fallback'}
           </span>
         </Link>

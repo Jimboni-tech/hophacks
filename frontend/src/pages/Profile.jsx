@@ -17,6 +17,7 @@ const Profile = () => {
     if (!confirm('Log out?')) return;
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    window.dispatchEvent(new Event('userChanged'));
     navigate('/login');
   };
 
@@ -26,7 +27,7 @@ const Profile = () => {
       <div><strong>Full Name:</strong> {user.fullName || 'N/A'}</div>
       <div><strong>Email:</strong> {user.email || 'N/A'}</div>
       <div style={{marginTop: 20}}>
-        <button onClick={handleLogout} style={{background: '#c53030', color: '#fff', padding: '8px 12px', borderRadius: 6, border: 'none'}}>Log out</button>
+        <button onClick={handleLogout} style={{background: '#fff5f5', color: '#9b2c2c', padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(155,44,44,0.12)'}}>Log out</button>
       </div>
     </div>
   );
