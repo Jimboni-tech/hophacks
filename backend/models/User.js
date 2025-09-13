@@ -1,0 +1,20 @@
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  fullName: { type: String, required: true },
+  skills: [String],
+  resume: {
+    data: Buffer, // PDF file data
+    contentType: { type: String, default: 'application/pdf' }
+  },
+  completedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
+  interestedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
+  createdAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
