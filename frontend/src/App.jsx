@@ -9,6 +9,7 @@ import Leaderboard from './pages/Leaderboard';
 import Recent from './pages/Recent';
 import Profile from './pages/Profile';
 import ProjectInformation from './pages/ProjectInformation';
+import OrganizationDetail from './pages/OrganizationDetail';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/organizations" element={<ProtectedRoute><Organizations /></ProtectedRoute>} />
+          <Route path="/organizations/:id" element={<ProtectedRoute><OrganizationDetail /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/recent" element={<ProtectedRoute><Recent /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

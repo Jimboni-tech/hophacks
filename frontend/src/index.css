@@ -3,9 +3,19 @@
   line-height: 1.5;
   font-weight: 400;
 
+  /* Theme variables - light theme with green undertone */
+  --bg: #fbfdf9;
+  --surface: #ffffff;
+  --text: #123327; /* deep green-blue */
+  --muted: rgba(18,51,39,0.65);
+  --accent: #2f9e44; /* green undertone */
+  --accent-600: #23803d;
+  --accent-200: #a7f3d0;
+  --border: rgba(18,51,39,0.08);
+
   color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
+  color: var(--text);
+  background-color: var(--bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,17 +25,15 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--accent-600);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: var(--accent);
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -36,23 +44,28 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid rgba(0,0,0,0.08);
-  padding: 0.6em 1.2em;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 0.6em 1.1em;
   font-size: 1em;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
-  background-color: #f5f7fb;
-  color: #213547;
+  background-color: var(--surface);
+  color: var(--text);
   cursor: pointer;
-  transition: border-color 0.25s, background-color 0.15s;
+  transition: box-shadow 0.12s ease, transform 0.08s ease;
 }
 button:hover {
-  border-color: rgba(0,0,0,0.12);
+  box-shadow: 0 2px 8px rgba(18,51,39,0.06);
+  transform: translateY(-1px);
+}
+button:active {
+  transform: translateY(0);
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 3px solid var(--accent-200);
+  outline-offset: 2px;
 }
 
 /* Keep light as default. If you want dark mode support later, add a .dark theme class or prefers-color-scheme rules */
