@@ -34,7 +34,7 @@ const Register = () => {
                 localStorage.setItem('token', token);
                 if (user) localStorage.setItem('user', JSON.stringify(user));
                 window.dispatchEvent(new Event('userChanged'));
-                navigate('/setup-profile');
+                setSuccess('Account created. Click "Finish setup" to add skills and resume.');
             } else {
                 setError(response.data.error || 'Registration failed');
             }
@@ -87,6 +87,20 @@ const Register = () => {
 
                     <button type="submit" style={{ marginTop: 6, background: 'var(--accent)', color: '#fff', border: 'none', padding: '10px 12px', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}>Create account</button>
                 </form>
+
+                {success && (
+                    <div style={{ marginTop: 16, display: 'flex', gap: 8, flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{ color: 'var(--muted)' }}>You can connect GitHub now or finish setup later.</div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button onClick={() => navigate('/setup-profile')} style={{ padding: '8px 12px', borderRadius: 8, background: '#16a34a', color: '#fff', border: 'none' }}>Finish setup</button>
+                            <button onClick={() => {
+                                const token = localStorage.getItem('token');
+                                const url = `${API_URL.replace('/api','')}/api/auth/github${token ? `?token=${encodeURIComponent(token)}&returnTo=/setup-profile` : '?returnTo=/setup-profile'}`;
+                                window.open(url, '_blank');
+                            }} style={{ padding: '8px 12px', borderRadius: 8, background: '#24292e', color: '#fff', border: 'none' }}>Connect GitHub</button>
+                        </div>
+                    </div>
+                )}
 
             </div>
         </div>

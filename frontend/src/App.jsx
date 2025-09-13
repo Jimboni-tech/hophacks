@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import ProjectInformation from './pages/ProjectInformation';
 import OrganizationDetail from './pages/OrganizationDetail';
 import ProfileSetup from './pages/ProfileSetup';
+import GithubCallback from './pages/GithubCallback';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/recent" element={<ProtectedRoute><Recent /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/setup-profile" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
+          <Route path="/auth/github/callback" element={<GithubCallback />} />
           <Route path="/projects/:id" element={<ProtectedRoute><ProjectInformation /></ProtectedRoute>} />
 
           <Route path="/login" element={<Login />} />

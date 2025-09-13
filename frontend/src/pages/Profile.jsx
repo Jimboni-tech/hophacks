@@ -204,6 +204,29 @@ const Profile = () => {
               </div>
             </div>
           </section>
+          <section style={{ marginTop: 16, padding: 18, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface)' }}>
+            <h3 style={{ marginTop: 0 }}>GitHub</h3>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              {user.github?.login ? (
+                <>
+                  <img src={user.github.avatarUrl} alt="GitHub avatar" style={{ width: 48, height: 48, borderRadius: 6 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <a href={user.github.profileUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>{user.github.login}</a>
+                    <div style={{ color: 'var(--muted)', fontSize: 13 }}>Connected</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ flex: 1, color: 'var(--muted)' }}>Not connected</div>
+                  <button onClick={() => {
+                    const token = localStorage.getItem('token');
+                    const url = `${API_URL.replace('/api','')}/api/auth/github${token ? `?token=${encodeURIComponent(token)}&returnTo=/profile` : '?returnTo=/profile'}`;
+                    window.open(url, '_blank');
+                  }} style={{ padding: '8px 12px', borderRadius: 6, background: '#24292e', color: '#fff', border: 'none' }}>Connect GitHub</button>
+                </>
+              )}
+            </div>
+          </section>
           
         </div>
       </div>

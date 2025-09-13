@@ -11,6 +11,13 @@ const userSchema = new mongoose.Schema({
     filename: { type: String },
     contentType: { type: String, default: 'application/pdf' }
   },
+  github: {
+    id: { type: Number },
+    login: { type: String },
+    accessToken: { type: String },
+    avatarUrl: { type: String },
+    profileUrl: { type: String }
+  },
   completedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   interestedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   appliedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],

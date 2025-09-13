@@ -91,6 +91,14 @@ const ProfileSetup = () => {
       <div style={{ marginTop: 20 }}>
         <button onClick={handleSave} disabled={loading} style={{ padding: '10px 14px', borderRadius: 8, background: '#16a34a', color: '#fff', border: 'none' }}>{loading ? 'Saving…' : 'Save profile'}</button>
       </div>
+      <div style={{ marginTop: 16 }}>
+        <p style={{ color: 'var(--muted)', marginBottom: 8 }}>Connect your GitHub account to show contributions and enable quick repo linking.</p>
+        <button type="button" onClick={() => {
+          const token = localStorage.getItem('token');
+          const url = `${API_URL.replace('/api','')}/api/auth/github${token ? `?token=${encodeURIComponent(token)}&returnTo=/setup-profile` : '?returnTo=/setup-profile'}`;
+          window.open(url, '_blank');
+        }} style={{ padding: '8px 12px', borderRadius: 8, background: '#24292e', color: '#fff', border: 'none' }}>Connect GitHub</button>
+      </div>
     </div>
   );
 };
