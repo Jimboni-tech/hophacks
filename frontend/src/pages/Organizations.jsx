@@ -48,36 +48,42 @@ const Organizations = () => {
       {loading && <p>Loading organizations…</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {!loading && !error && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {filtered.map((c) => (
             <Link
               to={`/organizations/${c._id}`}
               key={c._id}
               style={{
                 display: 'flex',
-                gap: 20,
+                gap: 16,
                 alignItems: 'center',
-                padding: 20,
-                borderRadius: 12,
+                padding: '12px 14px',
+                borderRadius: 10,
                 textDecoration: 'none',
                 color: 'inherit',
                 border: '1px solid var(--border)',
                 background: 'var(--surface)',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.04)'
+                boxShadow: '0 6px 18px rgba(0,0,0,0.04)'
               }}
             >
-              <div style={{ width: 140, height: 100, borderRadius: 8, overflow: 'hidden', background: 'var(--accent-200)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <img src={c.logo || '/vite.svg'} alt={c.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+              <div style={{ width: 88, height: 88, borderRadius: 10, overflow: 'hidden', background: 'linear-gradient(135deg,var(--accent-100),var(--accent-200))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <img src={c.imageUrl || c.logo || '/vite.svg'} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               </div>
-              <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <h3 style={{ margin: 0, fontSize: 20 }}>{c.name}</h3>
-                  <div style={{ color: 'var(--muted)', fontSize: 13 }}>{c.location || ''}</div>
-                </div>
-                {c.description && <p style={{ marginTop: 8, color: 'var(--muted)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{c.description}</p>}
-                <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>{(typeof c.projectCount === 'number' ? c.projectCount : (c.projects?.length ?? 0))} projects</div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>{c.website ? <a href={c.website} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Website</a> : null}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
+                  <div style={{ overflow: 'hidden', minWidth: 0 }}>
+                    <h3 style={{ margin: 0, fontSize: 18, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</h3>
+                    {c.summary && <div style={{ marginTop: 6, color: 'var(--muted)', fontSize: 13, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{c.summary}</div>}
+                    {c.description && (
+                      <div style={{ marginTop: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text)', fontSize: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                        {c.description}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ textAlign: 'right', color: 'var(--muted)', fontSize: 13, whiteSpace: 'nowrap' }}>
+                    <div>{(typeof c.projectCount === 'number' ? c.projectCount : (c.projects?.length ?? 0))} projects</div>
+                    {c.website ? <div style={{ marginTop: 6 }}><a href={c.website} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Website</a></div> : null}
+                  </div>
                 </div>
               </div>
             </Link>

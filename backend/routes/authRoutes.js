@@ -143,6 +143,7 @@ router.post('/register', async (req, res) => {
     if (isCompany) {
       // register company
       const Company = require('../models/Company');
+  const { description, imageUrl, summary } = req.body;
       const existing = await Company.findOne({ $or: [{ companyId: userId }, { email }] });
       if (existing) return res.status(400).json({ error: 'Company already exists' });
       const companyId = userId || require('crypto').randomBytes(8).toString('hex');
@@ -157,7 +158,7 @@ router.post('/register', async (req, res) => {
         slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
         if (attempt > 6) break;
       }
-      const company = new Company({ companyId, name: fullName || '', slug, email, password: hashedPassword, projects: [] });
+  const company = new Company({ companyId, name: fullName || '', slug, email, password: hashedPassword, description: description || '', imageUrl: imageUrl || '', summary: summary || '', projects: [] });
       await company.save();
       const token = jwt.sign({ companyId: company.companyId, email: company.email, company: true }, JWT_SECRET, { expiresIn: '1d' });
       return res.status(201).json({ message: 'Company registered', token, company });

@@ -9,6 +9,9 @@ const RegisterCompany = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [orgName, setOrgName] = useState('');
+  const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [summary, setSummary] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
@@ -24,7 +27,11 @@ const RegisterCompany = () => {
         email,
         password,
         fullName: orgName,
-        isCompany: true
+        isCompany: true,
+        description,
+        imageUrl
+        ,
+        summary
       };
       const response = await axios.post(`${API_URL}/register`, payload);
       if (response.data && response.data.token) {
@@ -60,6 +67,15 @@ const RegisterCompany = () => {
 
           <label style={{ fontSize: 13, color: 'var(--muted)' }}>Password</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 15 }} />
+
+          <label style={{ fontSize: 13, color: 'var(--muted)' }}>Organization Description</label>
+          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Short description of your organization" rows={3} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 15 }} />
+
+          <label style={{ fontSize: 13, color: 'var(--muted)' }}>Image URL</label>
+          <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://example.com/logo.png" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 15 }} />
+
+          <label style={{ fontSize: 13, color: 'var(--muted)' }}>One-line Summary</label>
+          <input type="text" value={summary} onChange={e => setSummary(e.target.value)} placeholder="What does your organization do? One line." maxLength={140} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 15 }} />
 
           {error && <div style={{ color: 'red', fontSize: 14 }}>{error}</div>}
           {success && <div style={{ color: 'green', fontSize: 14 }}>{success}</div>}

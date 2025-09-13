@@ -35,7 +35,10 @@ router.get('/companies', async (req, res) => {
         $project: {
           name: 1,
           description: 1,
-          logo: 1
+          logo: 1,
+          imageUrl: 1,
+          summary: 1,
+          website: 1
         }
       },
       {
@@ -72,7 +75,7 @@ router.get('/companies/:id', async (req, res) => {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid company id' });
 
-    const company = await Company.findById(id).select('name description website logo credentials').lean();
+  const company = await Company.findById(id).select('name description website logo imageUrl summary credentials').lean();
     if (!company) return res.status(404).json({ error: 'Company not found' });
 
     return res.json({ data: company });

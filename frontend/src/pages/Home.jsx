@@ -125,11 +125,34 @@ function SimpleProjectCard({ project, isWide }) {
         const mm = m % 60;
         return h > 0 ? `${h}h ${mm}m` : `${mm}m`;
     };
+    const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async (e) => {
+        e && e.stopPropagation && e.stopPropagation();
+        e && e.preventDefault && e.preventDefault();
+        if (saved || saving) return;
+        setSaving(true);
+        try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            await axios.post(`${API_URL}/user/interested/${project._id}`, {}, { headers });
+            setSaved(true);
+        } catch (err) {
+            // if not authenticated, show a simple alert (frontend handles redirect elsewhere)
+            if (err.response && err.response.status === 401) {
+                window.alert('Please log in to save projects');
+            } else {
+                console.error('Save failed', err);
+                window.alert('Failed to save project');
+            }
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
-        <Link
-            to={`/projects/${project._id}`}
-            style={{ textDecoration: 'none', color: 'inherit', display: 'block', width: '100%', maxWidth: 360 }}
-        >
+        <div style={{ textDecoration: 'none', color: 'inherit', display: 'block', width: '100%', maxWidth: 360 }}>
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -152,15 +175,15 @@ function SimpleProjectCard({ project, isWide }) {
                         <div style={{ color: 'var(--muted)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{project.company?.name || ''} — {project.summary || project.description}</div>
                     </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div style={{ color: 'var(--muted)', fontSize: 13 }}>{project.estimatedMinutes ? formatMinutes(project.estimatedMinutes) : (project.duration || '')}{project.volunteerHours ? ` • ${project.volunteerHours} volunteer hours` : ''}</div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                        <button style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 8, cursor: 'pointer' }}>View</button>
-                        <button style={{ background: 'transparent', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: 8, cursor: 'pointer' }}>Save</button>
+                        <Link to={`/projects/${project._id}`} style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', textDecoration: 'none' }}>View</Link>
+                        <button onClick={handleSave} disabled={saved || saving} aria-pressed={saved} style={{ background: saved ? 'var(--accent-600)' : 'transparent', color: saved ? '#fff' : 'inherit', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: 8, cursor: saved ? 'default' : 'pointer' }}>{saving ? 'Saving…' : (saved ? 'Saved' : 'Save')}</button>
                     </div>
                 </div>
             </div>
-        </Link>
+        </div>
     );
 }
 

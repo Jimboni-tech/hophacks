@@ -128,18 +128,6 @@ const LandingPage = () => {
         </div>
       </section>
       
-      {/* Impact Showcase Section */}
-      <section style={{ padding: '64px 20px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <h2 style={{ marginTop: 0 }}>Track Your Contributions Visually</h2>
-            <p style={{ color: 'var(--muted)', maxWidth: 600 }}>
-                Your personal dashboard includes a calendar heatmap of all your verified completions, giving you a clear and motivating overview of your impact over time.
-            </p>
-            <div style={{ width: '100%', maxWidth: 650, padding: 20, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', marginTop: 16 }}>
-                <p style={{ margin: 0, color: 'var(--muted)' }}></p>
-            </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer style={{ padding: '32px 20px', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>

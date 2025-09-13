@@ -59,9 +59,8 @@ const Stats = () => {
           </section>
         ) : (
           <section aria-label="Global stats">
-            <h2 style={{ marginTop: 0 }}>Global Stats</h2>
-            <p>Show platform-wide metrics: total volunteers, active projects, success rates, etc.</p>
-            {/* Placeholder for global stats */}
+            <h2 style={{ marginTop: 0 }}>Global Leaderboard</h2>
+            <Leaderboard />
           </section>
         )}
       </div>
@@ -70,6 +69,93 @@ const Stats = () => {
 };
 
 export default Stats;
+
+function Leaderboard() {
+  const [data, setData] = useState({ volunteerHours: [], completions: [], applications: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+        const endpoint = base.endsWith('/api') ? `${base}` : `${base}/api`;
+        const url = `${endpoint}/leaderboard/users?limit=10`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed to load leaderboard');
+        const j = await res.json();
+        if (!mounted) return;
+        setData({
+          volunteerHours: j.topVolunteerHours || [],
+          completions: j.topCompletions || [],
+          applications: j.topApplications || []
+        });
+      } catch (e) {
+        setError(e.message || 'Error loading leaderboard');
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  if (loading) return <div>Loading leaderboard...</div>;
+  if (error) return <div style={{ color: 'red' }}>Error: {error}</div>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginTop: 12 }}>
+      <LeaderboardTable
+        title="Top Volunteer Hours"
+        rows={data.volunteerHours}
+        metricKey="totalVolunteerHours"
+        metricLabel="Hours"
+      />
+      <LeaderboardTable
+        title="Top Completions"
+        rows={data.completions}
+        metricKey="totalCompletedProjects"
+        metricLabel="Completions"
+      />
+      <LeaderboardTable
+        title="Top Applications"
+        rows={data.applications}
+        metricKey="totalApplications"
+        metricLabel="Applications"
+      />
+    </div>
+  );
+}
+
+function LeaderboardTable({ title, rows, metricKey, metricLabel }) {
+  return (
+    <div style={{ flex: 1, minWidth: 260, background: '#f8fafc', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #e5e7eb', padding: 16 }}>
+      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 10 }}>{title}</div>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ background: '#e6fbe6' }}>
+            <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: 13, color: '#0f172a', fontWeight: 600 }}>#</th>
+            <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: 13, color: '#0f172a', fontWeight: 600 }}>User</th>
+            <th style={{ textAlign: 'right', padding: '6px 8px', fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{metricLabel}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr><td colSpan={3} style={{ textAlign: 'center', color: '#6b7280', padding: 12 }}>No data</td></tr>
+          ) : rows.map((u, i) => (
+            <tr key={u._id || u.userId || i} style={{ background: i % 2 === 0 ? '#fff' : '#f3f4f6' }}>
+              <td style={{ padding: '6px 8px', fontWeight: 600 }}>{i + 1}</td>
+              <td style={{ padding: '6px 8px' }}>{u.fullName || u.userId || 'User'}</td>
+              <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{u[metricKey]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 function PersonalContribs() {
   const [counts, setCounts] = useState({});
@@ -233,15 +319,15 @@ function PersonalContribs() {
       </div>
 
       <div style={{ display: 'flex', gap: 16, marginTop: 18 }}>
-        <div style={{ flex: 1, minWidth: 0, background: '#f8fafc', padding: 16, borderRadius: 8, textAlign: 'center' }}>
+        <div style={{ flex: 1, minWidth: 0, background: '#f8fafc', padding: 16, borderRadius: 8, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: 12, color: '#6b7280' }}>Total Volunteer Hours</div>
           <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{(totals.totalVolunteerHours || 0).toFixed(2)}</div>
         </div>
-        <div style={{ flex: 1, minWidth: 0, background: '#f8fafc', padding: 16, borderRadius: 8, textAlign: 'center' }}>
+        <div style={{ flex: 1, minWidth: 0, background: '#f8fafc', padding: 16, borderRadius: 8, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: 12, color: '#6b7280' }}>Total Completions</div>
           <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{totals.totalCompletedProjects || 0}</div>
         </div>
-        <div style={{ flex: 1, minWidth: 0, background: '#f8fafc', padding: 16, borderRadius: 8, textAlign: 'center' }}>
+        <div style={{ flex: 1, minWidth: 0, background: '#f8fafc', padding: 16, borderRadius: 8, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #e5e7eb' }}>
           <div style={{ fontSize: 12, color: '#6b7280' }}>Total Applications</div>
           <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{totals.totalApplications || 0}</div>
         </div>
@@ -276,7 +362,9 @@ function PersonalHeader() {
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <h2 style={{ marginTop: 0 }}>{name}, this is how much you've contributed to the community</h2>
+      <h2 style={{ marginTop: 0 }}>
+        Your dedication is making a real difference; here’s the impact you’ve made!
+      </h2>
     </div>
   );
 }

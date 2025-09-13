@@ -5,6 +5,41 @@ const Project = require('../models/Project');
 
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+
+// GET /api/leaderboard/users?limit=10
+// Returns top users by volunteer hours, completions, and applications
+router.get('/leaderboard/users', async (req, res) => {
+  try {
+    const { limit = '10' } = req.query;
+    const lim = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
+    // Get top users by volunteer hours
+    const topHours = await require('../models/User').find({})
+      .select('userId fullName totalVolunteerHours totalCompletedProjects totalApplications')
+      .sort({ totalVolunteerHours: -1 })
+      .limit(lim)
+      .lean();
+    // Get top users by completions
+    const topCompletions = await require('../models/User').find({})
+      .select('userId fullName totalVolunteerHours totalCompletedProjects totalApplications')
+      .sort({ totalCompletedProjects: -1 })
+      .limit(lim)
+      .lean();
+    // Get top users by applications
+    const topApplications = await require('../models/User').find({})
+      .select('userId fullName totalVolunteerHours totalCompletedProjects totalApplications')
+      .sort({ totalApplications: -1 })
+      .limit(lim)
+      .lean();
+    res.json({
+      topVolunteerHours: topHours,
+      topCompletions: topCompletions,
+      topApplications: topApplications
+    });
+  } catch (err) {
+    console.error('Failed to fetch user leaderboard', err);
+    res.status(500).json({ error: 'Failed to fetch user leaderboard' });
+  }
+});
 const Company = require('../models/Company');
 const { sendMail } = require('../lib/email');
 const User = require('../models/User');

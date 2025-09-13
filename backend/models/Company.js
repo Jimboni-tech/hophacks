@@ -9,6 +9,8 @@ const companySchema = new mongoose.Schema({
   password: { type: String, required: false },
   credentials: String,
   description: String,
+  imageUrl: String,
+  summary: String,
   projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }]
 });
 

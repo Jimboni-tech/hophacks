@@ -210,83 +210,99 @@ const Recent = () => {
 
       <section style={{marginTop: 20}}>
         <h3>In Progress</h3>
-        {current.length === 0 ? (
-          <div>No current projects.</div>
-        ) : (
-          <ul style={{listStyle: 'none', padding: 0}}>
-            {current.map(p => (
-              <li key={p._id} style={{marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                <div style={{flex: 1, paddingRight: 12}}>
-                  <Link to={`/current/${p._id}`}>{p.name}</Link>
-                    <div style={{fontSize: 13, color: '#666'}}>{(p.description || '').slice(0, 160)}{p.description && p.description.length > 160 ? '…' : ''}</div>
-                </div>
-                  <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-                    {p.completionRequested ? (
-                      <div style={{background: '#fef3c7', color: '#92400e', border: '1px solid #f59e0b', padding: '6px 10px', borderRadius: 8, fontWeight: 700}}>Completion requested</div>
-                    ) : (
-                      <button onClick={() => completeProject(p)} style={{padding: '8px 10px', borderRadius: 6}}>Complete</button>
-                    )}
+        <div style={{background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', marginTop: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.04)'}}>
+          {current.length === 0 ? (
+            <div style={{color: 'var(--muted)'}}>No current projects.</div>
+          ) : (
+            <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
+              {current.map(p => (
+                <li key={p._id} style={{marginBottom: 18}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f6fff8', border: '1px solid #e5e7eb', borderRadius: 10, padding: '14px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'}}>
+                    <div style={{flex: 1, paddingRight: 12}}>
+                      <Link to={`/current/${p._id}`} style={{fontWeight: 600, color: 'var(--accent)', textDecoration: 'none'}}>{p.name}</Link>
+                      <div style={{fontSize: 13, color: '#666'}}>{(p.description || '').slice(0, 160)}{p.description && p.description.length > 160 ? '…' : ''}</div>
+                    </div>
+                    <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+                      {p.completionRequested ? (
+                        <div style={{background: '#fef3c7', color: '#92400e', border: '1px solid #f59e0b', padding: '6px 10px', borderRadius: 8, fontWeight: 700}}>Completion requested</div>
+                      ) : (
+                        <button onClick={() => completeProject(p)} style={{padding: '8px 10px', borderRadius: 6}}>Complete</button>
+                      )}
+                    </div>
                   </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
       <section style={{marginTop: 20}}>
         <h3>Applied</h3>
-        {applied.length === 0 ? (
-          <div>No applied projects.</div>
-        ) : (
-          <ul style={{listStyle: 'none', padding: 0}}>
-            {applied.map(p => (
-              <li key={p._id} style={{marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                <div style={{flex: 1, paddingRight: 12}}>
-                  <Link to={`/projects/${p._id}`}>{p.name}</Link>
-                  <div style={{fontSize: 13, color: '#666'}}>{(p.description || '').slice(0, 160)}{p.description && p.description.length > 160 ? '…' : ''}</div>
-                </div>
-                <div style={{marginLeft: 12, minWidth: 120, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                  <div style={{width: '100%', display: 'flex', justifyContent: 'center'}}><StatusBadge status={p.status} /></div>
-                </div>
-                <div style={{marginLeft: 12}}>
-                  {p.status === 'approved' && <button onClick={() => moveToCurrent(p)} style={{padding: '8px 10px', borderRadius: 6}}>Move to Current</button>}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div style={{background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', marginTop: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.04)'}}>
+          {applied.length === 0 ? (
+            <div style={{color: 'var(--muted)'}}>No applied projects.</div>
+          ) : (
+            <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
+              {applied.map(p => (
+                <li key={p._id} style={{marginBottom: 18}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f6fff8', border: '1px solid #e5e7eb', borderRadius: 10, padding: '14px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'}}>
+                    <div style={{flex: 1, paddingRight: 12}}>
+                      <Link to={`/projects/${p._id}`} style={{fontWeight: 600, color: 'var(--accent)', textDecoration: 'none'}}>{p.name}</Link>
+                      <div style={{fontSize: 13, color: '#666'}}>{(p.description || '').slice(0, 160)}{p.description && p.description.length > 160 ? '…' : ''}</div>
+                    </div>
+                    <div style={{marginLeft: 12, minWidth: 120, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                      <div style={{width: '100%', display: 'flex', justifyContent: 'center'}}><StatusBadge status={p.status} /></div>
+                    </div>
+                    <div style={{marginLeft: 12}}>
+                      {p.status === 'approved' && <button onClick={() => moveToCurrent(p)} style={{padding: '8px 10px', borderRadius: 6}}>Move to Current</button>}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
       <section style={{marginTop: 30}}>
         <h3>Saved For Later</h3>
-        {saved.length === 0 ? (
-          <div>No saved projects.</div>
-        ) : (
-          <ul style={{listStyle: 'none', padding: 0}}>
-            {saved.map(p => (
-              <li key={p._id} style={{marginBottom: 12}}>
-                <Link to={`/projects/${p._id}`}>{p.name}</Link>
-                <div style={{fontSize: 13, color: '#666'}}>{p.description?.slice(0, 120)}{p.description && p.description.length > 120 ? '…' : ''}</div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div style={{background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', marginTop: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.04)'}}>
+          {saved.length === 0 ? (
+            <div style={{color: 'var(--muted)'}}>No saved projects.</div>
+          ) : (
+            <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
+              {saved.map(p => (
+                <li key={p._id} style={{marginBottom: 18}}>
+                  <div style={{background: '#f6fff8', border: '1px solid #e5e7eb', borderRadius: 10, padding: '14px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'}}>
+                    <Link to={`/projects/${p._id}`} style={{fontWeight: 600, color: 'var(--accent)', textDecoration: 'none'}}>{p.name}</Link>
+                    <div style={{fontSize: 13, color: '#666'}}>{p.description?.slice(0, 120)}{p.description && p.description.length > 120 ? '…' : ''}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
       <section style={{marginTop: 30}}>
         <h3>Completed</h3>
-        {completed.length === 0 ? (
-          <div>No completed projects.</div>
-        ) : (
-          <ul style={{listStyle: 'none', padding: 0}}>
-            {completed.map(p => (
-              <li key={p._id} style={{marginBottom: 12}}>
-                <Link to={`/projects/${p._id}`}>{p.name}</Link>
-                <div style={{fontSize: 13, color: '#666'}}>{p.description?.slice(0, 120)}{p.description && p.description.length > 120 ? '…' : ''}</div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div style={{background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', marginTop: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.04)'}}>
+          {completed.length === 0 ? (
+            <div style={{color: 'var(--muted)'}}>No completed projects.</div>
+          ) : (
+            <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
+              {completed.map(p => (
+                <li key={p._id} style={{marginBottom: 18}}>
+                  <div style={{background: '#f6fff8', border: '1px solid #e5e7eb', borderRadius: 10, padding: '14px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'}}>
+                    <Link to={`/projects/${p._id}`} style={{fontWeight: 600, color: 'var(--accent)', textDecoration: 'none'}}>{p.name}</Link>
+                    <div style={{fontSize: 13, color: '#666'}}>{p.description?.slice(0, 120)}{p.description && p.description.length > 120 ? '…' : ''}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
     </div>
   );
