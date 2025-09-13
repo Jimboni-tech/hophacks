@@ -9,7 +9,35 @@ const router = express.Router();
 // Response: { data: [ { _id, name, description } ] }
 router.get('/companies', async (req, res) => {
   try {
-    const companies = await Company.find().select('name description logo').lean();
+    // Aggregate company list with project counts to return projectCount per company
+    const companies = await Company.aggregate([
+      {
+        $project: {
+          name: 1,
+          description: 1,
+          logo: 1
+        }
+      },
+      {
+        $lookup: {
+          from: 'projects',
+          localField: '_id',
+          foreignField: 'company',
+          as: 'projects'
+        }
+      },
+      {
+        $addFields: {
+          projectCount: { $size: '$projects' }
+        }
+      },
+      {
+        $project: {
+          projects: 0
+        }
+      }
+    ]).exec();
+
     return res.json({ data: companies });
   } catch (err) {
     console.error('Failed to fetch companies', err);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
@@ -11,6 +11,8 @@ const Register = () => {
     const [fullName, setFullName] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -27,11 +29,12 @@ const Register = () => {
             };
             const response = await axios.post(`${API_URL}/register`, payload);
             if (response.data && response.data.token) {
-                setSuccess('Registration successful!');
-                setEmail('');
-                setPassword('');
-                setFullName('');
+                const token = response.data.token;
+                const user = response.data.user || null;
+                localStorage.setItem('token', token);
+                if (user) localStorage.setItem('user', JSON.stringify(user));
                 window.dispatchEvent(new Event('userChanged'));
+                navigate('/setup-profile');
             } else {
                 setError(response.data.error || 'Registration failed');
             }

@@ -5,12 +5,13 @@ import Register from './pages/Register';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
 import Navbar from './components/Navbar';
-import Organizations from './pages/About';
-import Leaderboard from './pages/Leaderboard';
+import Organizations from './pages/Organizations';
+import Stats from './pages/Stats';
 import Recent from './pages/Recent';
 import Profile from './pages/Profile';
 import ProjectInformation from './pages/ProjectInformation';
 import OrganizationDetail from './pages/OrganizationDetail';
+import ProfileSetup from './pages/ProfileSetup';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -23,9 +24,10 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/organizations" element={<ProtectedRoute><Organizations /></ProtectedRoute>} />
           <Route path="/organizations/:id" element={<ProtectedRoute><OrganizationDetail /></ProtectedRoute>} />
-          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
           <Route path="/recent" element={<ProtectedRoute><Recent /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/setup-profile" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
           <Route path="/projects/:id" element={<ProtectedRoute><ProjectInformation /></ProtectedRoute>} />
 
           <Route path="/login" element={<Login />} />

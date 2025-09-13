@@ -162,7 +162,7 @@ const Navbar = () => {
             Recents
           </NavLink>
           <NavLink
-            to="/leaderboard"
+            to="/stats"
             style={({ isActive }) => ({
               ...linkStyle,
               color: isActive ? 'var(--accent)' : 'var(--text)',
@@ -173,7 +173,7 @@ const Navbar = () => {
               borderRadius: linkStyle.borderRadius,
             })}
           >
-            Leaderboard
+            Stats
           </NavLink>
         </div>
 

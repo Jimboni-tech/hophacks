@@ -6,6 +6,84 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const User = require('../models/User');
 const Project = require('../models/Project');
+const bcrypt = require('bcryptjs');
+
+// POST /api/user/profile/skills - update authenticated user's skills
+router.post('/user/profile/skills', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '') || req.query.token || req.headers['x-access-token'];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const skills = Array.isArray(req.body.skills) ? req.body.skills : [];
+    const user = await User.findOne({ userId: decoded.userId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    user.skills = skills;
+    await user.save();
+    res.json({ message: 'Skills updated', skills: user.skills });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token', details: err.message });
+  }
+});
+
+// POST /api/user/profile/resume - upload resume as base64 string
+router.post('/user/profile/resume', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '') || req.query.token || req.headers['x-access-token'];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { filename, contentType, base64 } = req.body;
+    if (!base64) return res.status(400).json({ error: 'No resume data' });
+    const user = await User.findOne({ userId: decoded.userId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const buffer = Buffer.from(base64, 'base64');
+    user.resume = { data: buffer, contentType: contentType || 'application/pdf' };
+    await user.save();
+    res.json({ message: 'Resume uploaded', filename });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token', details: err.message });
+  }
+});
+
+// GET /api/user/profile/resume - download authenticated user's resume
+router.get('/user/profile/resume', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '') || req.query.token || req.headers['x-access-token'];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ userId: decoded.userId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user.resume || !user.resume.data) return res.status(404).json({ error: 'No resume uploaded' });
+    res.setHeader('Content-Type', user.resume.contentType || 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
+    res.send(user.resume.data);
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token', details: err.message });
+  }
+});
+
+// POST /api/user/change-password - change authenticated user's password
+router.post('/user/change-password', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '') || req.query.token || req.headers['x-access-token'];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword) return res.status(400).json({ error: 'New password required' });
+    const user = await User.findOne({ userId: decoded.userId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const match = await bcrypt.compare(currentPassword || '', user.password);
+    if (!match) return res.status(401).json({ error: 'Current password incorrect' });
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: 'Password changed' });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token', details: err.message });
+  }
+});
 
 // Protected route: get currently authenticated user's profile
 router.get('/user/profile', async (req, res) => {
