@@ -1,14 +1,11 @@
+import { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
+import './App.css'
 
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import reactLogo from './assets/react.svg';
-import viteLogo from '/vite.svg';
-import './App.css';
-import Login from './pages/Login';
-import Register from './pages/Register';
+function App() {
+  const [count, setCount] = useState(0)
 
-function Home() {
-  const [count, setCount] = useState(0);
   return (
     <>
       <div>
@@ -32,32 +29,7 @@ function Home() {
         Click on the Vite and React logos to learn more
       </p>
     </>
-  );
-}
-
-function PrivateRoute({ children }) {
-  const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" />;
-}
-
-function App() {
-  return (
-    <Router>
-      <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        {/* Add a signup page route if you have one */}
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <Home />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </Router>
-  );
+  )
 }
 
 export default App;

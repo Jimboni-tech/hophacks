@@ -5,7 +5,6 @@ const cors = require('cors');
 const connectDB = require('./db/connect');
 const userRoutes = require('./routes/userRoutes');
 const userApplyRoutes = require('./routes/userApplyRoutes');
-const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT;
@@ -20,7 +19,6 @@ connectDB(MONGODB_URI);
 // Routes
 app.use('/api', userRoutes);
 app.use('/api', userApplyRoutes);
-app.use('/api', authRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend is running!');
