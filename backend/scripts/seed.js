@@ -28,6 +28,8 @@ async function run() {
       description: 'Normalize and dedupe CSV donations.',
       requiredSkills: ['CSV', 'Cleaning'],
       estimatedTime: '6 hours',
+      datasetUrl: 'https://example.com/datasets/donations.csv',
+      uiUrl: 'https://example.com/tools/csv-cleaner',
     },
     {
       name: 'Categorize Survey Responses',
@@ -35,6 +37,8 @@ async function run() {
       description: 'Tag responses by theme.',
       requiredSkills: ['Tagging', 'Survey'],
       estimatedTime: '1 day',
+      datasetUrl: 'https://example.com/datasets/survey.json',
+      uiUrl: 'https://example.com/tools/survey-tagger',
     },
     {
       name: 'Fix JSON Formatting',
@@ -42,6 +46,8 @@ async function run() {
       description: 'Validate and pretty-print JSON.',
       requiredSkills: ['JSON', 'Formatting'],
       estimatedTime: '3 hours',
+      datasetUrl: 'https://example.com/datasets/sample.json',
+      uiUrl: 'https://example.com/tools/json-formatter',
     },
     {
       name: 'Label Housing Feedback',
@@ -49,6 +55,8 @@ async function run() {
       description: 'Label categories for housing feedback.',
       requiredSkills: ['Labeling', 'Housing'],
       estimatedTime: '8 hours',
+      datasetUrl: 'https://example.com/datasets/housing.csv',
+      uiUrl: 'https://example.com/tools/labeler',
     },
   ]);
 

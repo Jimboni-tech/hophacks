@@ -6,6 +6,7 @@ const connectDB = require('./db/connect');
 const userRoutes = require('./routes/userRoutes');
 const userApplyRoutes = require('./routes/userApplyRoutes');
 const projectRoutes = require('./routes/projectRoutes');
+const submissionRoutes = require('./routes/submissionRoutes');
 
 const app = express();
 const PORT = process.env.PORT;
@@ -21,6 +22,7 @@ connectDB(MONGODB_URI);
 app.use('/api', userRoutes);
 app.use('/api', userApplyRoutes);
 app.use('/api', projectRoutes);
+app.use('/api', submissionRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend is running!');

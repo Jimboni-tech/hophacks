@@ -111,9 +111,17 @@ const ProjectSearch = () => {
               {p.description && (
                 <p className="text-sm mt-2 text-gray-700">{p.description}</p>
               )}
-              <button className="mt-3 px-3 py-1 bg-blue-600 text-white rounded-lg">
-                Apply
-              </button>
+              {(p.datasetUrl || p.uiUrl) && (
+                <div className="flex gap-3 mt-2 text-sm">
+                  {p.datasetUrl && (
+                    <a className="text-blue-600 underline" href={p.datasetUrl} target="_blank" rel="noreferrer">Dataset</a>
+                  )}
+                  {p.uiUrl && (
+                    <a className="text-blue-600 underline" href={p.uiUrl} target="_blank" rel="noreferrer">Open UI</a>
+                  )}
+                </div>
+              )}
+              <SubmissionForm projectId={p._id} />
             </li>
           ))
         ) : (!loading && !error && (
@@ -144,5 +152,106 @@ const ProjectSearch = () => {
     </div>
   );
 };
+
+function SubmissionForm({ projectId }) {
+  const [userId, setUserId] = useState("");
+  const [submissionUrl, setSubmissionUrl] = useState("");
+  const [notes, setNotes] = useState("");
+  const [state, setState] = useState({ sending: false, success: "", error: "" });
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    setState({ sending: true, success: "", error: "" });
+    try {
+      const res = await fetch(`/api/projects/${projectId}/submissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, submissionUrl, notes }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `HTTP ${res.status}`);
+      }
+      setState({ sending: false, success: 'Submitted! Pending review.', error: '' });
+      setSubmissionUrl("");
+      setNotes("");
+    } catch (err) {
+      setState({ sending: false, success: '', error: err.message || 'Failed to submit' });
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mt-3 border-t pt-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <input
+          className="border rounded p-2"
+          placeholder="Your userId"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          required
+        />
+        <input
+          className="border rounded p-2"
+          placeholder="Submission URL (e.g., drive link)"
+          value={submissionUrl}
+          onChange={(e) => setSubmissionUrl(e.target.value)}
+          required
+        />
+        <input
+          className="border rounded p-2"
+          placeholder="Notes (optional)"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
+          type="submit"
+          disabled={state.sending}
+        >
+          {state.sending ? 'Submitting...' : 'Work on Task'}
+        </button>
+        {state.success && <span className="text-green-700 text-sm">{state.success}</span>}
+        {state.error && <span className="text-red-600 text-sm">{state.error}</span>}
+      </div>
+    </form>
+  );
+}
+
+export function Leaderboard() {
+  const [rows, setRows] = useState([]);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/leaderboard');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!ignore) setRows(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (!ignore) setError('Failed to load leaderboard');
+      }
+    })();
+    return () => { ignore = true; };
+  }, []);
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto">
+      <h2 className="text-xl font-bold mb-3">Top Contributors</h2>
+      {error && <p className="text-red-600">{error}</p>}
+      <ul className="space-y-2">
+        {rows.map((r) => (
+          <li key={r.userId} className="flex justify-between border p-2 rounded">
+            <span className="font-mono">{r.userId}</span>
+            <span className="text-sm text-gray-700">{r.approvedCount} approved</span>
+          </li>
+        ))}
+        {rows.length === 0 && !error && <p className="text-gray-500">No approved submissions yet.</p>}
+      </ul>
+    </div>
+  );
+}
 
 export default ProjectSearch;
