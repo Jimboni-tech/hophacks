@@ -7,7 +7,7 @@ const userRoutes = require('./routes/userRoutes');
 const userApplyRoutes = require('./routes/userApplyRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 app.use(cors());
