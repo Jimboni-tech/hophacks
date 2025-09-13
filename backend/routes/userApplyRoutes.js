@@ -6,7 +6,32 @@ const mongoose = require('mongoose');
 
 const router = express.Router();
 
-// ...existing user routes...
+// Mark a project as completed for a user
+router.post('/users/:userId/complete', async (req, res) => {
+  const { projectId } = req.body;
+  try {
+    const user = await User.findOne({ userId: req.params.userId });
+    const project = await Project.findById(projectId);
+    if (!user || !project) {
+      return res.status(404).json({ error: 'User or Project not found' });
+    }
+
+    // Remove project from interestedProjects if present
+    user.interestedProjects = user.interestedProjects.filter(
+      pid => pid.toString() !== project._id.toString()
+    );
+
+    // Add project to completedProjects if not already present
+    if (!user.completedProjects.includes(project._id)) {
+      user.completedProjects.push(project._id);
+    }
+    await user.save();
+
+    res.json({ message: 'Project marked as completed for user.', user });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to mark project as completed' });
+  }
+});
 
 // Apply to a project for a company
 router.post('/users/:userId/apply', async (req, res) => {
@@ -30,6 +55,53 @@ router.post('/users/:userId/apply', async (req, res) => {
     res.json({ message: 'Applied to project successfully', user });
   } catch (err) {
     res.status(500).json({ error: 'Failed to apply to project' });
+  }
+});
+
+// Pick a user for a project (assign)
+router.post('/projects/:projectId/pick', async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const user = await User.findOne({ userId });
+    const project = await Project.findById(req.params.projectId);
+    if (!user || !project) {
+      return res.status(404).json({ error: 'User or Project not found' });
+    }
+
+    // Remove project from DB
+    await Project.findByIdAndDelete(project._id);
+
+    res.json({ message: 'User picked and project removed from database.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to pick user for project' });
+  }
+});
+
+// Reject a user for a project (remove from interested lists)
+router.post('/projects/:projectId/reject', async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const user = await User.findOne({ userId });
+    const project = await Project.findById(req.params.projectId);
+    if (!user || !project) {
+      return res.status(404).json({ error: 'User or Project not found' });
+    }
+
+    // Remove project from user's interestedProjects
+    user.interestedProjects = user.interestedProjects.filter(
+      pid => pid.toString() !== project._id.toString()
+    );
+    await user.save();
+
+    // Remove user from project's interestedUsers
+    project.interestedUsers = project.interestedUsers.filter(
+      uid => uid.toString() !== user._id.toString()
+    );
+    await project.save();
+
+    res.json({ message: 'User rejected and removed from interested lists.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to reject user for project' });
   }
 });
 
