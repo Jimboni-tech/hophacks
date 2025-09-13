@@ -11,7 +11,8 @@ const companySchema = new mongoose.Schema({
   description: String,
   imageUrl: String,
   summary: String,
-  projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }]
+  projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
+  completedNotifications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CompletedNotification' }]
 });
 
 // ensure slug is unique when present

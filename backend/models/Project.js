@@ -13,8 +13,8 @@ const projectSchema = new mongoose.Schema({
   githubUrl: String,
   imageUrl: { type: String },
   interestedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  appliedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
-  ,
+  appliedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  completedUsers: [{ type: String }], // userId of users who completed this project
   // optional cached embedding for the project description (vector of floats)
   embedding: { type: [Number], index: '2dsphere', default: undefined }
 }, { timestamps: true });

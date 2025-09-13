@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 
 const submissionSchema = new mongoose.Schema({
   project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  // optional reference to the User document
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  // legacy external user identifier (kept for compatibility)
   userId: { type: String, required: true }, // external user identifier
   submissionUrl: { type: String, required: true }, // link to file, gist, S3, etc.
   notes: { type: String },

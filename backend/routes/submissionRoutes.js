@@ -2,9 +2,104 @@ const express = require('express');
 const crypto = require('crypto');
 const Submission = require('../models/Submission');
 const Project = require('../models/Project');
-
-const router = express.Router();
 const jwt = require('jsonwebtoken');
+const CompletedNotification = require('../models/CompletedNotification');
+const router = express.Router();
+
+// PATCH /api/company/completed-notifications/:id { action: 'approve' | 'reject', reviewer, rejectReason }
+router.patch('/company/completed-notifications/:id', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing or invalid authorization' });
+    const token = auth.slice('Bearer '.length);
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can access this endpoint' });
+    const { action, reviewer, rejectReason } = req.body || {};
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action' });
+    }
+    const status = action === 'approve' ? 'approved' : 'rejected';
+    const notification = await require('../models/CompletedNotification').findByIdAndUpdate(
+      req.params.id,
+      { status, reviewedAt: new Date(), reviewer: reviewer || 'company', rejectReason: status === 'rejected' ? (rejectReason || 'Not specified') : undefined },
+      { new: true }
+    ).populate('submission').populate('user').populate('project');
+    if (!notification) return res.status(404).json({ error: 'Notification not found' });
+    // If approved, mark submission as completionVerified
+    if (status === 'approved') {
+      const Submission = require('../models/Submission');
+      await Submission.findByIdAndUpdate(notification.submission._id || notification.submission, {
+        completionVerified: true,
+        completionVerifiedAt: new Date(),
+        completionVerifier: reviewer || 'company',
+        status: 'approved'
+      });
+    } else if (status === 'rejected') {
+      const Submission = require('../models/Submission');
+      await Submission.findByIdAndUpdate(notification.submission._id || notification.submission, {
+        completionVerified: false,
+        completionVerifiedAt: new Date(),
+        completionVerifier: reviewer || 'company',
+        status: 'rejected',
+        rejectReason: rejectReason || 'Not specified'
+      });
+    }
+    res.json(notification);
+  } catch (err) {
+    console.error('Failed to review completed notification', err);
+    res.status(500).json({ error: 'Failed to review completed notification' });
+  }
+});
+// GET /api/company/completed-notifications - recent completion requests for company-owned projects
+router.get('/company/completed-notifications', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing or invalid authorization' });
+    const token = auth.slice('Bearer '.length);
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can access this endpoint' });
+
+    // load company and its notifications, populating submission, user, and project refs
+    const company = await Company.findOne({ companyId: payload.companyId }).populate({
+      path: 'completedNotifications',
+      populate: [
+        { path: 'submission' },
+        { path: 'user', select: 'userId fullName email skills github' },
+        { path: 'project', select: 'name summary description estimatedTime volunteerHours githubUrl imageUrl requiredSkills' }
+      ]
+    });
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    // Fetch user details for all notifications
+    // Format notifications for frontend. Use populated user/project when available, otherwise fall back to snapshots
+    const data = (company.completedNotifications || []).map(n => ({
+      id: n._id,
+      submissionId: n.submission?._id || (n.submission && n.submission),
+      userId: n.userId,
+      user: n.user ? { userId: n.user.userId, fullName: n.user.fullName, email: n.user.email, skills: n.user.skills, github: n.user.github } : (n.userInfo || {}),
+      project: n.project ? { id: n.project._id, name: n.project.name, summary: n.project.summary, description: n.project.description, estimatedTime: n.project.estimatedTime, volunteerHours: n.project.volunteerHours, githubUrl: n.project.githubUrl, imageUrl: n.project.imageUrl, requiredSkills: n.project.requiredSkills } : (n.projectInfo || {}),
+      requestedAt: n.requestedAt,
+      status: n.status,
+      reviewedAt: n.reviewedAt,
+      reviewer: n.reviewer,
+      rejectReason: n.rejectReason
+    }));
+    res.json({ data });
+  } catch (err) {
+    console.error('Failed to list company completed notifications', err);
+    res.status(500).json({ error: 'Failed to list company completed notifications' });
+  }
+});
+
 
 // GET /api/leaderboard/users?limit=10
 // Returns top users by volunteer hours, completions, and applications
@@ -62,7 +157,10 @@ router.post('/projects/:projectId/submissions', async (req, res) => {
     const dup = await Submission.findOne({ project: project._id, userId, hash, status: { $in: ['pending', 'approved'] } });
     if (dup) return res.status(409).json({ error: 'Duplicate submission detected' });
 
-    const created = await Submission.create({ project: project._id, userId, submissionUrl, notes, hash });
+  // optionally link to an existing User document
+  let userDoc = null;
+  try { userDoc = await require('../models/User').findOne({ userId }); } catch (e) { /* ignore */ }
+  const created = await Submission.create({ project: project._id, user: userDoc?._id, userId, submissionUrl, notes, hash });
     res.status(201).json(created);
   } catch (err) {
     console.error('Failed to create submission', err);
@@ -83,6 +181,7 @@ router.get('/submissions', async (req, res) => {
     const total = await Submission.countDocuments(filter);
     const data = await Submission.find(filter)
       .populate('project', 'name')
+      .populate('user', 'userId fullName')
       .sort({ createdAt: -1 })
       .skip((pageNum - 1) * pageSize)
       .limit(pageSize)
@@ -100,6 +199,7 @@ router.get('/submissions/:id', async (req, res) => {
     const { id } = req.params;
     const submission = await Submission.findById(id)
       .populate({ path: 'project', select: 'name summary description estimatedMinutes volunteerHours imageUrl company' })
+      .populate({ path: 'user', select: 'userId fullName email skills github' })
       .lean();
     if (!submission) return res.status(404).json({ error: 'Submission not found' });
     res.json(submission);
@@ -146,52 +246,49 @@ router.post('/submissions/:id/complete-request', async (req, res) => {
     // only users (not companies) can request completion
     if (payload.company) return res.status(403).json({ error: 'Companies cannot request completion' });
 
-    const submission = await Submission.findById(id);
+  const submission = await Submission.findById(id).populate('user');
     if (!submission) return res.status(404).json({ error: 'Submission not found' });
     // verify the submission belongs to this user
     if (submission.userId !== payload.userId) return res.status(403).json({ error: 'Not your submission' });
 
     submission.completionRequested = true;
     submission.completionRequestedAt = new Date();
-    // generate a one-time confirmation token
-    try {
-      submission.confirmationToken = crypto.randomBytes(20).toString('hex');
-      submission.confirmationTokenAt = new Date();
-    } catch (e) {
-      submission.confirmationToken = null;
-      submission.confirmationTokenAt = null;
-    }
     await submission.save();
-    // notify the company that owns the project
-    try {
-      const project = await Project.findById(submission.project).populate('company', 'name email').lean();
-      const user = await User.findOne({ userId: payload.userId }).select('fullName userId').lean();
-      const userName = (user && user.fullName) || payload.userId;
-      if (project && project.company && project.company.email) {
-        const companyEmail = project.company.email;
-        const subject = `Completion requested: ${project.name}`;
-        const projectLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/projects/${String(project._id)}`;
-        const submissionLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/submissions/${String(submission._id)}`;
-  const confirmLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/confirm/${String(submission._id)}?token=${submission.confirmationToken}`;
-        const html = `
-          <h2>Completion Requested</h2>
-          <p>The user <strong>${userName}</strong> has requested verification that they completed the project <strong>${project.name}</strong>.</p>
-          <h3>Project Summary</h3>
-          <p><strong>${project.name}</strong></p>
-          <p>${project.summary || project.description || 'No description provided.'}</p>
-          <p>Project page: <a href="${projectLink}">${projectLink}</a></p>
-          <h3>Submission</h3>
-          <p>View submission: <a href="${submissionLink}">Submission details</a></p>
-          <p><a href="${confirmLink}">Confirm completion</a> — clicking this will mark the submission as verified and move the project to the user's completed list.</p>
-        `;
-        // send email (best-effort)
-        const sent = await sendMail({ to: companyEmail, subject, html });
-        if (sent && sent.previewUrl) console.log('Preview email URL:', sent.previewUrl);
-      }
-    } catch (e) {
-      console.error('Failed to notify company about completion request', e);
+    // Add a completed notification to the company, with references and snapshot info
+    const project = await Project.findById(submission.project).populate('company', '_id').lean();
+    const user = await require('../models/User').findOne({ userId: submission.userId }).lean();
+    const CompletedNotification = require('../models/CompletedNotification');
+    const notification = await CompletedNotification.create({
+      submission: submission._id,
+      user: user ? user._id : undefined,
+      userId: submission.userId,
+      userInfo: user ? {
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        skills: user.skills,
+        github: user.github
+      } : {},
+      project: submission.project,
+      projectInfo: project ? {
+        name: project.name,
+        summary: project.summary,
+        description: project.description,
+        estimatedTime: project.estimatedTime,
+        volunteerHours: project.volunteerHours,
+        githubUrl: project.githubUrl,
+        imageUrl: project.imageUrl,
+        requiredSkills: project.requiredSkills
+      } : {},
+      requestedAt: new Date(),
+      status: 'pending'
+    });
+    // Add notification to company
+    if (project && project.company && project.company._id) {
+      await require('../models/Company').findByIdAndUpdate(project.company._id, {
+        $push: { completedNotifications: notification._id }
+      });
     }
-
     return res.json({ success: true, submission });
   } catch (err) {
     console.error('Failed to request completion', err);
@@ -231,7 +328,7 @@ router.get('/company/submissions', async (req, res) => {
     }
     if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can access this endpoint' });
 
-    const company = await Company.findOne({ companyId: payload.companyId });
+  const company = await Company.findOne({ companyId: payload.companyId });
     if (!company) return res.status(404).json({ error: 'Company not found' });
 
     // find submissions for projects owned by this company
@@ -240,20 +337,25 @@ router.get('/company/submissions', async (req, res) => {
     const submissions = await Submission.find({ project: { $in: projectIds } })
       .sort({ createdAt: -1 })
       .limit(100)
+      .populate('user', 'userId fullName email skills github')
+      .populate('project', 'name summary description estimatedTime volunteerHours githubUrl imageUrl requiredSkills')
       .lean();
 
-    // fetch user full names for the submission userIds
-    const userIds = [...new Set(submissions.map(s => s.userId))];
-    const users = await User.find({ userId: { $in: userIds } }).select('userId fullName').lean();
-    const userMap = Object.fromEntries(users.map(u => [u.userId, u.fullName]));
     const projectMap = Object.fromEntries(projects.map(p => [String(p._id), p.name]));
 
     const data = submissions.map(s => ({
       id: s._id,
-      projectId: s.project,
-      projectName: projectMap[String(s.project)] || 'Unknown project',
+      projectId: s.project?._id || s.project,
+      projectName: s.project?.name || projectMap[String(s.project)] || 'Unknown project',
+      projectSummary: s.project?.summary,
+      projectDescription: s.project?.description,
+      projectEstimatedTime: s.project?.estimatedTime,
+      projectVolunteerHours: s.project?.volunteerHours,
+      projectGithubUrl: s.project?.githubUrl,
+      projectImageUrl: s.project?.imageUrl,
+      projectRequiredSkills: s.project?.requiredSkills || [],
       userId: s.userId,
-      userFullName: userMap[s.userId] || s.userId,
+      user: s.user ? { userId: s.user.userId, fullName: s.user.fullName, email: s.user.email, skills: s.user.skills, github: s.user.github } : undefined,
       createdAt: s.createdAt,
       status: s.status,
       submissionUrl: s.submissionUrl,
@@ -349,13 +451,13 @@ router.patch('/submissions/:id/verify', async (req, res) => {
     await submission.save();
 
     // update the user: add project to completedProjects and increment totals
-    const user = await User.findOne({ userId: submission.userId });
-    if (user) {
+  const user = submission.user ? await User.findById(submission.user._id) : await User.findOne({ userId: submission.userId });
+  if (user) {
       // remove from currentProjects if present
       if (Array.isArray(user.currentProjects) && user.currentProjects.length) {
         user.currentProjects = user.currentProjects.filter(c => String(c.projectId || c._id || c) !== String(project._id));
       }
-      const has = (user.completedProjects || []).some(p => String(p) === String(project._id));
+  const has = (user.completedProjects || []).some(p => String(p) === String(project._id));
       if (!has) {
         user.completedProjects = user.completedProjects || [];
         user.completedProjects.push(project._id);
@@ -365,6 +467,8 @@ router.patch('/submissions/:id/verify', async (req, res) => {
         user.totalVolunteerHours = (user.totalVolunteerHours || 0) + (hours || 0);
       }
       await user.save();
+      // Add userId to project's completedUsers array if not already present
+      await Project.findByIdAndUpdate(project._id, { $addToSet: { completedUsers: user.userId } });
     }
 
     return res.json({ success: true, submission });
@@ -401,8 +505,8 @@ router.post('/submissions/:id/confirm', async (req, res) => {
     await submission.save();
 
     // update user record
-    const project = await Project.findById(submission.project).lean();
-    const user = await User.findOne({ userId: submission.userId });
+  const project = await Project.findById(submission.project).lean();
+  const user = submission.user ? await User.findById(submission.user) : await User.findOne({ userId: submission.userId });
     if (user && project) {
       // remove from currentProjects if present
       if (Array.isArray(user.currentProjects) && user.currentProjects.length) {

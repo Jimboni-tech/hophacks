@@ -144,8 +144,8 @@ const Navbar = () => {
         >
           {isCompanySession ? (
             <>
-              <NavLink to="/company/projects/new" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Post Project</NavLink>
-              <NavLink to="/company/projects" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Manage Projects</NavLink>
+              <NavLink to="/company/projects/new" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Create Project</NavLink>
+              <NavLink to="/company/projects" end style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Manage Projects</NavLink>
               <NavLink to="/company/applicants" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Applicant Notification</NavLink>
             </>
           ) : isLoggedIn ? (

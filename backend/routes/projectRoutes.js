@@ -1,11 +1,28 @@
 const express = require('express');
 const Project = require('../models/Project');
-
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Company = require('../models/Company');
 const User = require('../models/User');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+
+// GET /api/projects/:id/completed-users
+// Returns: { completedUsers: [userId], applicants: [userId] }
+router.get('/projects/:id/completed-users', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id).lean();
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    // Get completed users
+    const completedUsers = project.completedUsers || [];
+    // Get recent applicants (appliedUsers)
+    const applicants = project.appliedUsers || [];
+    res.json({ completedUsers, applicants });
+  } catch (err) {
+    console.error('Failed to get completed users/applicants for project', err);
+    res.status(500).json({ error: 'Failed to get completed users/applicants for project' });
+  }
+});
 
 // GET /api/projects
 // Query: q, page=1, limit=10, sort=newest|oldest|name|relevance
