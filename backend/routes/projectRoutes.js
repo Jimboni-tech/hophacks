@@ -53,4 +53,17 @@ router.get('/projects', async (req, res) => {
   }
 });
 
+// GET /api/projects/:id - get single project by Mongo _id
+router.get('/projects/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id).populate('company');
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    res.json(project);
+  } catch (err) {
+    console.error('Failed to fetch project by id', err);
+    res.status(500).json({ error: 'Failed to fetch project' });
+  }
+});
+
 module.exports = router;
