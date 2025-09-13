@@ -48,8 +48,8 @@ const Home = () => {
     };
 
     return (
-        // This outer div is now only for background and minimum height.
-        <div style={{ minHeight: '100vh', padding: '24px 16px', background: 'var(--surface)' }}>
+    // Outer container — allow natural page scrolling
+    <div style={{ padding: '24px 16px', background: 'var(--surface)' }}>
             {/* Stats card: fixed at top-right on wide screens */}
             {isWide && (
                 <div style={{ position: 'fixed', top: 96, right: 32, zIndex: 60 }}>
@@ -66,15 +66,18 @@ const Home = () => {
                             </div>
                 </div>
             )}
-            {/* This is the main content container. 
-                'margin: 0 auto' is the key to centering it horizontally. */}
+            {/* Main content container — entire page scrolls naturally */}
             <div style={{
                 maxWidth: 760,
                 margin: '0 auto',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '20px'
+                gap: '20px',
+                boxSizing: 'border-box',
+                boxSizing: 'border-box',
+                paddingTop: 24,
+                paddingBottom: 24
             }}>
                 <h1 style={{ fontSize: 28, color: 'var(--text)', textAlign: 'center' }}>Find Projects</h1>
 
@@ -91,19 +94,21 @@ const Home = () => {
                     <button type="submit" style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', cursor: 'pointer' }}>Search</button>
                 </form>
 
-                {loading ? (
-                    <div style={{ color: 'var(--muted)' }}>Loading projects...</div>
-                ) : error ? (
-                    <div style={{ color: 'red' }}>{error}</div>
-                ) : projects.length === 0 ? (
-                    <div style={{ color: 'var(--muted)' }}>No projects found. Try a different search.</div>
-                ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: isWide ? 'repeat(2, 1fr)' : '1fr', gap: 16, width: '100%', justifyItems: 'center' }}>
-                        {projects.map(p => (
-                            <SimpleProjectCard key={p._id} project={p} isWide={isWide} />
-                        ))}
-                    </div>
-                )}
+                <div style={{ width: '100%' }}>
+                    {loading ? (
+                        <div style={{ color: 'var(--muted)' }}>Loading projects...</div>
+                    ) : error ? (
+                        <div style={{ color: 'red' }}>{error}</div>
+                    ) : projects.length === 0 ? (
+                        <div style={{ color: 'var(--muted)' }}>No projects found. Try a different search.</div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: isWide ? 'repeat(2, 1fr)' : '1fr', gap: 16, width: '100%', justifyItems: 'center', paddingBottom: 24 }}>
+                            {projects.map(p => (
+                                <SimpleProjectCard key={p._id} project={p} isWide={isWide} />
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

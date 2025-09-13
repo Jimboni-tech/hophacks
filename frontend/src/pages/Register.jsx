@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const Register = () => {
-    console.log('VITE_API_URL:', API_URL);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
@@ -31,7 +31,6 @@ const Register = () => {
                 setEmail('');
                 setPassword('');
                 setFullName('');
-                // if backend returned user/token in future, notify listeners
                 window.dispatchEvent(new Event('userChanged'));
             } else {
                 setError(response.data.error || 'Registration failed');
@@ -42,41 +41,51 @@ const Register = () => {
     };
 
     return (
-    <div style={{maxWidth: 400, margin: '40px auto', padding: 20, background: '#fff', color: '#000', border: '2px solid #000', zIndex: 9999, position: 'relative'}}>
-            <div style={{marginBottom: 16, fontWeight: 'bold', color: 'red'}}>Register Page Rendered</div>
-            <h2>Register</h2>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Full Name:</label>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface)', padding: 24 }}>
+            <div style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)', padding: 28, borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
+                <h2 style={{ margin: 0, marginBottom: 14, color: 'var(--text)', fontSize: 22, textAlign: 'center' }}>Create an Account</h2>
+                <p style={{ marginTop: 0, marginBottom: 18, color: 'var(--muted)', textAlign: 'center' }}>
+                    Already have an account? <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Log in</Link>
+                </p>
+
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <label style={{ fontSize: 13, color: 'var(--muted)' }}>Full Name</label>
                     <input
+                        aria-label="Full name"
                         type="text"
                         value={fullName}
                         onChange={e => setFullName(e.target.value)}
                         required
+                        style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 15 }}
                     />
-                </div>
-                <div style={{marginTop: 10}}>
-                    <label>Email:</label>
+
+                    <label style={{ fontSize: 13, color: 'var(--muted)' }}>Email</label>
                     <input
+                        aria-label="Email"
                         type="email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         required
+                        style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 15 }}
                     />
-                </div>
-                <div style={{marginTop: 10}}>
-                    <label>Password:</label>
+
+                    <label style={{ fontSize: 13, color: 'var(--muted)' }}>Password</label>
                     <input
+                        aria-label="Password"
                         type="password"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         required
+                        style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 15 }}
                     />
-                </div>
-                {error && <div style={{color: 'red', marginTop: 8}}>{error}</div>}
-                {success && <div style={{color: 'green', marginTop: 8}}>{success}</div>}
-                <button type="submit" style={{marginTop: 16}}>Register</button>
-            </form>
+
+                    {error && <div style={{ color: 'red', fontSize: 14 }}>{error}</div>}
+                    {success && <div style={{ color: 'green', fontSize: 14 }}>{success}</div>}
+
+                    <button type="submit" style={{ marginTop: 6, background: 'var(--accent)', color: '#fff', border: 'none', padding: '10px 12px', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}>Create account</button>
+                </form>
+
+            </div>
         </div>
     );
 };
