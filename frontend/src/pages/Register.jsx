@@ -31,6 +31,8 @@ const Register = () => {
                 setEmail('');
                 setPassword('');
                 setFullName('');
+                // if backend returned user/token in future, notify listeners
+                window.dispatchEvent(new Event('userChanged'));
             } else {
                 setError(response.data.error || 'Registration failed');
             }

@@ -2,20 +2,15 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Home from './pages/Home';
+import Navbar from './components/Navbar';
+import About from './pages/About';
+import Leaderboard from './pages/Leaderboard';
+import Recent from './pages/Recent';
+import Profile from './pages/Profile';
 
 // ...existing code...
 
-function Home() {
-  return (
-    <div style={{textAlign: 'center', marginTop: 40}}>
-      <h1>Welcome to the App</h1>
-      <div style={{marginTop: 24}}>
-        <Link to="/login"><button>Login</button></Link>
-        <Link to="/register" style={{marginLeft: 16}}><button>Register</button></Link>
-      </div>
-    </div>
-  );
-}
 
 
 function RequireAuth({ children }) {
@@ -29,16 +24,19 @@ function RequireAuth({ children }) {
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={
-          <RequireAuth>
-            <Home />
-          </RequireAuth>
-        } />
-        <Route path="/login" element={<Login />} />
-  <Route path="/register" element={<Register />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      <Navbar />
+      <div style={{ paddingTop: 60 }}>
+        <Routes>
+          <Route path="/home" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/recent" element={<Recent />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*" element={<Navigate to="/home" />} />
+        </Routes>
+      </div>
     </Router>
   );
 }

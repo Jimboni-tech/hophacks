@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Login = () => {
     const [email, setEmail] = useState('');
     const navigate = useNavigate();
@@ -13,9 +15,16 @@ const Login = () => {
         e.preventDefault();
         setError('');
         try {
-            const res = await axios.post('/api/login', { email, password });
+            const res = await axios.post(`${API_URL}/login`, { email, password });
             localStorage.setItem('token', res.data.token);
-            // Redirect or update UI as needed
+            // Fetch user profile
+            const profileRes = await axios.get(`${API_URL}/user/profile`, {
+                headers: { Authorization: `Bearer ${res.data.token}` }
+            });
+            localStorage.setItem('user', JSON.stringify(profileRes.data));
+            // notify other components that user changed
+            window.dispatchEvent(new Event('userChanged'));
+            navigate('/home');
         } catch (err) {
             setError(err.response?.data?.error || 'Login failed');
         }
