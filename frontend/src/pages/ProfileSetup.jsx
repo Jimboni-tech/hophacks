@@ -9,6 +9,7 @@ const ProfileSetup = () => {
   const [skillsInput, setSkillsInput] = useState('');
   const [skills, setSkills] = useState([]);
   const [resumeFile, setResumeFile] = useState(null);
+  const [resumeName, setResumeName] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,7 +43,10 @@ const ProfileSetup = () => {
           reader.onerror = rej;
           reader.readAsDataURL(resumeFile);
         });
-        await axios.post(`${API_URL}/user/profile/resume`, { filename: resumeFile.name, contentType: resumeFile.type, base64 }, { headers: { Authorization: `Bearer ${token}` } });
+        const r = await axios.post(`${API_URL}/user/profile/resume`, { filename: resumeFile.name, contentType: resumeFile.type, base64 }, { headers: { Authorization: `Bearer ${token}` } });
+        // show filename returned by server
+        setResumeName(r.data.filename || resumeFile.name);
+        setResumeFile(null);
       }
 
   // navigate to home page after successful profile setup
@@ -63,7 +67,7 @@ const ProfileSetup = () => {
         <label style={{ display: 'block', marginBottom: 8 }}>Skills</label>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input value={skillsInput} onChange={e => setSkillsInput(e.target.value)} placeholder="Add a skill" style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 14 }} />
-          <button type="button" onClick={addSkill} style={{ padding: '6px 8px', borderRadius: 6, fontSize: 14 }}>Add</button>
+          <button type="button" onClick={addSkill} style={{ padding: '6px 8px', borderRadius: 6, fontSize: 14, background: '#16a34a', color: '#fff', border: 'none' }}>Add</button>
         </div>
         <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {skills.map(s => (
@@ -78,13 +82,14 @@ const ProfileSetup = () => {
       <div style={{ marginTop: 18 }}>
         <label style={{ display: 'block', marginBottom: 8 }}>Resume (PDF preferred)</label>
         <input type="file" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={onFileChange} />
-        {resumeFile && <div style={{ marginTop: 8 }}>{resumeFile.name} — {(resumeFile.size / 1024).toFixed(0)} KB</div>}
+  {resumeFile && <div style={{ marginTop: 8 }}>{resumeFile.name} — {(resumeFile.size / 1024).toFixed(0)} KB</div>}
+  {resumeName && <div style={{ marginTop: 8, color: 'var(--muted)' }}>Uploaded: {resumeName}</div>}
       </div>
 
       {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
 
       <div style={{ marginTop: 20 }}>
-        <button onClick={handleSave} disabled={loading} style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none' }}>{loading ? 'Saving…' : 'Save profile'}</button>
+        <button onClick={handleSave} disabled={loading} style={{ padding: '10px 14px', borderRadius: 8, background: '#16a34a', color: '#fff', border: 'none' }}>{loading ? 'Saving…' : 'Save profile'}</button>
       </div>
     </div>
   );

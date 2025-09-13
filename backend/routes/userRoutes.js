@@ -33,14 +33,14 @@ router.post('/user/profile/resume', async (req, res) => {
   if (!token) return res.status(401).json({ error: 'No token provided' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const { filename, contentType, base64 } = req.body;
+  const { filename, contentType, base64 } = req.body;
     if (!base64) return res.status(400).json({ error: 'No resume data' });
     const user = await User.findOne({ userId: decoded.userId });
     if (!user) return res.status(404).json({ error: 'User not found' });
     const buffer = Buffer.from(base64, 'base64');
-    user.resume = { data: buffer, contentType: contentType || 'application/pdf' };
+  user.resume = { data: buffer, filename: filename || 'resume.pdf', contentType: contentType || 'application/pdf' };
     await user.save();
-    res.json({ message: 'Resume uploaded', filename });
+  res.json({ message: 'Resume uploaded', filename: user.resume.filename });
   } catch (err) {
     res.status(401).json({ error: 'Invalid token', details: err.message });
   }
@@ -56,9 +56,11 @@ router.get('/user/profile/resume', async (req, res) => {
     const user = await User.findOne({ userId: decoded.userId });
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (!user.resume || !user.resume.data) return res.status(404).json({ error: 'No resume uploaded' });
-    res.setHeader('Content-Type', user.resume.contentType || 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
-    res.send(user.resume.data);
+  res.setHeader('Content-Type', user.resume.contentType || 'application/pdf');
+  // allow inline viewing and include original filename for downloads
+  const safeFilename = (user.resume.filename || 'resume.pdf').replace(/"/g, '');
+  res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"; filename*=UTF-8''${encodeURIComponent(safeFilename)}`);
+  res.send(user.resume.data);
   } catch (err) {
     res.status(401).json({ error: 'Invalid token', details: err.message });
   }

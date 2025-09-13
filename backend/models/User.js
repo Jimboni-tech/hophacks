@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   skills: [String],
   resume: {
     data: Buffer, // PDF file data
+    filename: { type: String },
     contentType: { type: String, default: 'application/pdf' }
   },
   completedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],

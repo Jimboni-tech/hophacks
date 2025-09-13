@@ -29,7 +29,7 @@ const Profile = () => {
         const res = await axios.get(`${API_URL}/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
         setUser(res.data);
         setSkills(res.data.skills || []);
-        setResumeName(res.data.resume ? 'Uploaded' : null);
+        setResumeName(res.data.resume?.filename || (res.data.resume ? 'Uploaded' : null));
       } catch (err) {
         setError(err.response?.data?.error || err.message || 'Failed to load');
       } finally {
@@ -90,8 +90,8 @@ const Profile = () => {
         reader.onerror = rej;
         reader.readAsDataURL(file);
       });
-      await axios.post(`${API_URL}/user/profile/resume`, { filename: file.name, contentType: file.type, base64 }, { headers: { Authorization: `Bearer ${token}` } });
-      setResumeName(file.name);
+      const r = await axios.post(`${API_URL}/user/profile/resume`, { filename: file.name, contentType: file.type, base64 }, { headers: { Authorization: `Bearer ${token}` } });
+      setResumeName(r.data.filename || file.name);
       setResumeFile(null);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to upload resume');
@@ -115,13 +115,33 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(`${API_URL}/user/profile/resume`, { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const blob = new Blob([res.data], { type: res.headers['content-type'] || 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'resume.pdf');
+      // try to get filename from Content-Disposition header
+      const cd = res.headers['content-disposition'] || '';
+      let filename = resumeName || 'resume.pdf';
+      const match = cd.match(/filename\*?=(?:UTF-8'')?"?([^;"\n]+)"?/i);
+      if (match && match[1]) filename = decodeURIComponent(match[1]);
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.response?.data?.error || 'No resume available');
+    }
+  };
+
+  const openResumeInline = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/user/profile/resume`, { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' });
+      const blob = new Blob([res.data], { type: res.headers['content-type'] || 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener');
+      // Note: cannot set filename when opening inline; download preserves filename via Content-Disposition
     } catch (err) {
       setError(err.response?.data?.error || 'No resume available');
     }
@@ -163,6 +183,7 @@ const Profile = () => {
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               <div>{resumeName || 'No resume uploaded'}</div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                {resumeName && <button onClick={openResumeInline} style={{ padding: '6px 10px', borderRadius: 6, background: '#16a34a', color: '#fff', border: 'none' }}>Open</button>}
                 {resumeName && <button onClick={downloadResume} style={{ padding: '6px 10px', borderRadius: 6, background: '#16a34a', color: '#fff', border: 'none' }}>Download</button>}
                 <label style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', background: '#16a34a', color: '#fff' }}>
                   Upload
