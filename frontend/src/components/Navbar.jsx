@@ -146,12 +146,13 @@ const Navbar = () => {
             <>
               <NavLink to="/company/projects/new" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Post Project</NavLink>
               <NavLink to="/company/projects" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Manage Projects</NavLink>
-              <NavLink to="/company/applicants" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Review Applicants</NavLink>
+              <NavLink to="/company/applicants" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Applicant Notification</NavLink>
             </>
           ) : isLoggedIn ? (
             <>
               <NavLink to="/home" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Home</NavLink>
               <NavLink to="/organizations" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Organizations</NavLink>
+              <img src="/commit4good.png" alt="App Icon" style={{ width: 45, height: 45, margin: '0 16px', background: 'transparent'}} />
               <NavLink to="/recent" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>My Projects</NavLink>
               <NavLink to="/stats" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Stats</NavLink>
             </>

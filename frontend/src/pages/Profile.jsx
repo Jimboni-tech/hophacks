@@ -181,10 +181,14 @@ const Profile = () => {
           <section style={{ marginTop: 16, padding: 18, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface)' }}>
             <h3 style={{ marginTop: 0 }}>Resume</h3>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div>{resumeName || 'No resume uploaded'}</div>
+              <div>{resumeName ? resumeName : 'No resume uploaded'}</div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-                {resumeName && <button onClick={openResumeInline} style={{ padding: '6px 10px', borderRadius: 6, background: '#16a34a', color: '#fff', border: 'none' }}>Open</button>}
-                {resumeName && <button onClick={downloadResume} style={{ padding: '6px 10px', borderRadius: 6, background: '#16a34a', color: '#fff', border: 'none' }}>Download</button>}
+                {resumeName ? (
+                  <>
+                    <button onClick={openResumeInline} style={{ padding: '6px 10px', borderRadius: 6, background: '#16a34a', color: '#fff', border: 'none' }}>Open</button>
+                    <button onClick={downloadResume} style={{ padding: '6px 10px', borderRadius: 6, background: '#16a34a', color: '#fff', border: 'none' }}>Download</button>
+                  </>
+                ) : null}
                 <label style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', background: '#16a34a', color: '#fff' }}>
                   Upload
                   <input type="file" accept="application/pdf" style={{ display: 'none' }} onChange={e => uploadResume(e.target.files?.[0] || null)} />

@@ -362,8 +362,8 @@ function PersonalHeader() {
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <h2 style={{ marginTop: 0 }}>
-        Your dedication is making a real difference; here’s the impact you’ve made!
+      <h2 style={{ margin: 0, fontWeight: 600, fontSize: 20 }}>
+        Your Impact
       </h2>
     </div>
   );

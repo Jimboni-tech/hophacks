@@ -10,6 +10,8 @@ const ProjectInformation = () => {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [applyLoading, setApplyLoading] = useState(false);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -132,38 +134,51 @@ const ProjectInformation = () => {
             }
           }} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--accent)', fontWeight: 600 }}>Save for later</button>
 
-          <button onClick={async () => {
-            const token = localStorage.getItem('token');
-            const userStr = localStorage.getItem('user');
-            if (!token || !userStr) return alert('Please log in as a user to apply');
-            try {
-              const user = JSON.parse(userStr);
-              const userId = user.userId || user.userId;
-              // prompt for submission URL and notes (quick UX)
-              const defaultUrl = project.githubUrl || '';
-              const submissionUrl = window.prompt('Submission URL (link to resume / repo / gist):', defaultUrl);
-              if (!submissionUrl) return alert('Submission cancelled');
-              const notes = window.prompt('Optional message / notes for the company:', '');
-              // post submission
-              await axios.post(`${API_URL}/projects/${id}/submissions`, { userId, submissionUrl, notes });
-              // refresh project interested count
-              const res = await axios.get(`${API_URL}/projects/${id}`);
-              setProject(res.data);
-              // refresh profile and store (to update appliedProjects etc.)
-              try {
-                const profileRes = await axios.get(`${API_URL}/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
-                localStorage.setItem('user', JSON.stringify(profileRes.data));
-                window.dispatchEvent(new Event('userChanged'));
-              } catch (e) {
-                // ignore profile refresh errors
-              }
-              alert('Application submitted — the company will be notified.');
-            } catch (e) {
-              // show server error message when available
-              const msg = e?.response?.data?.error || e.message || 'Failed to submit application';
-              alert(msg);
-            }
-          }} style={{ padding: '8px 12px', background: '#2b8aef', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600 }}>Apply</button>
+          <button
+            onClick={() => setShowConfirm(true)}
+            style={{ padding: '8px 12px', background: '#2b8aef', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600 }}
+            disabled={applyLoading}
+          >Apply</button>
+          {showConfirm && (
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ background: '#fff', borderRadius: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', padding: '32px 28px', minWidth: 320, textAlign: 'center' }}>
+                <h3 style={{ margin: 0, marginBottom: 12, fontSize: 22 }}>Confirm Application</h3>
+                <div style={{ fontSize: 16, color: '#374151', marginBottom: 18 }}>Are you sure you want to apply to <span style={{ fontWeight: 700 }}>{project.name}</span>?</div>
+                <div style={{ display: 'flex', gap: 18, justifyContent: 'center', marginTop: 10 }}>
+                  <button
+                    onClick={async () => {
+                      setApplyLoading(true);
+                      const token = localStorage.getItem('token');
+                      const userStr = localStorage.getItem('user');
+                      if (!token || !userStr) { setShowConfirm(false); setApplyLoading(false); return; }
+                      try {
+                        const user = JSON.parse(userStr);
+                        const userId = user.userId || user.userId;
+                        // Send a placeholder submissionUrl to satisfy backend requirements
+                        await axios.post(`${API_URL}/projects/${id}/submissions`, { userId, submissionUrl: 'N/A' });
+                        const res = await axios.get(`${API_URL}/projects/${id}`);
+                        setProject(res.data);
+                        try {
+                          const profileRes = await axios.get(`${API_URL}/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
+                          localStorage.setItem('user', JSON.stringify(profileRes.data));
+                          window.dispatchEvent(new Event('userChanged'));
+                        } catch (e) {}
+                      } catch (e) {}
+                      setShowConfirm(false);
+                      setApplyLoading(false);
+                    }}
+                    style={{ padding: '10px 18px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 16, minWidth: 80 }}
+                    disabled={applyLoading}
+                  >Yes</button>
+                  <button
+                    onClick={() => setShowConfirm(false)}
+                    style={{ padding: '10px 18px', background: '#e5e7eb', color: '#374151', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 16, minWidth: 80 }}
+                    disabled={applyLoading}
+                  >Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
