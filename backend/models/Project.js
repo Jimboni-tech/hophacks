@@ -7,7 +7,10 @@ const projectSchema = new mongoose.Schema({
   requiredSkills: [String],
   estimatedTime: String, // e.g., '2 weeks', '40 hours', etc.
   interestedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
-});
+}, { timestamps: true });
+
+// Optional: text index to speed up searches across fields
+projectSchema.index({ name: 'text', description: 'text' });
 
 const Project = mongoose.model('Project', projectSchema);
 
