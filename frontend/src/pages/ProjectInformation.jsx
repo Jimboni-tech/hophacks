@@ -155,15 +155,26 @@ const ProjectInformation = () => {
                         const user = JSON.parse(userStr);
                         const userId = user.userId || user.userId;
                         // Send a placeholder submissionUrl to satisfy backend requirements
-                        await axios.post(`${API_URL}/projects/${id}/submissions`, { userId, submissionUrl: 'N/A' });
+                        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                        await axios.post(`${API_URL}/projects/${id}/submissions`, { userId, submissionUrl: 'N/A' }, { headers });
                         const res = await axios.get(`${API_URL}/projects/${id}`);
                         setProject(res.data);
                         try {
-                          const profileRes = await axios.get(`${API_URL}/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
+                          const profileRes = await axios.get(`${API_URL}/user/profile`, { headers });
                           localStorage.setItem('user', JSON.stringify(profileRes.data));
                           window.dispatchEvent(new Event('userChanged'));
-                        } catch (e) {}
-                      } catch (e) {}
+                        } catch (e) {
+                          // ignore profile refresh errors
+                        }
+                      } catch (e) {
+                        // Handle duplicate submission gracefully
+                        if (e && e.response && e.response.status === 409) {
+                          alert('You have already applied to this project.');
+                        } else {
+                          console.error('Apply failed', e);
+                          alert('Failed to apply to project');
+                        }
+                      }
                       setShowConfirm(false);
                       setApplyLoading(false);
                     }}

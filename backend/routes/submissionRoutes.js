@@ -33,12 +33,50 @@ router.patch('/company/completed-notifications/:id', async (req, res) => {
     // If approved, mark submission as completionVerified
     if (status === 'approved') {
       const Submission = require('../models/Submission');
-      await Submission.findByIdAndUpdate(notification.submission._id || notification.submission, {
+      const submissionId = notification.submission && (notification.submission._id || notification.submission);
+      await Submission.findByIdAndUpdate(submissionId, {
         completionVerified: true,
         completionVerifiedAt: new Date(),
         completionVerifier: reviewer || 'company',
         status: 'approved'
       });
+
+      // Also update the associated user record and project (move from current -> completed)
+      try {
+        const submission = await Submission.findById(submissionId).lean();
+        if (submission) {
+          const Project = require('../models/Project');
+          const Company = require('../models/Company');
+          const User = require('../models/User');
+
+          const project = await Project.findById(submission.project).populate('company').lean();
+          const companyDoc = await Company.findOne({ companyId: payload.companyId });
+          // ensure the acting company actually owns the project
+          if (project && companyDoc && String(project.company?._id || project.company) === String(companyDoc._id)) {
+            const user = submission.user ? await User.findById(submission.user) : await User.findOne({ userId: submission.userId });
+            if (user) {
+              // remove from currentProjects if present
+              if (Array.isArray(user.currentProjects) && user.currentProjects.length) {
+                user.currentProjects = user.currentProjects.filter(c => String(c.projectId || c._id || c) !== String(project._id));
+              }
+              const has = (user.completedProjects || []).some(p => String(p) === String(project._id));
+              if (!has) {
+                user.completedProjects = user.completedProjects || [];
+                user.completedProjects.push(project._id);
+                user.totalCompletedProjects = (user.totalCompletedProjects || 0) + 1;
+                const minutes = project.estimatedMinutes ? Number(project.estimatedMinutes) : 0;
+                const hours = minutes ? (minutes / 60) : (project.volunteerHours || 0);
+                user.totalVolunteerHours = (user.totalVolunteerHours || 0) + (hours || 0);
+              }
+              await user.save();
+              // Add userId to project's completedUsers array if not already present
+              await Project.findByIdAndUpdate(project._id, { $addToSet: { completedUsers: user.userId } });
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to update user/project after approving completion notification', e);
+      }
     } else if (status === 'rejected') {
       const Submission = require('../models/Submission');
       await Submission.findByIdAndUpdate(notification.submission._id || notification.submission, {
@@ -81,19 +119,20 @@ router.get('/company/completed-notifications', async (req, res) => {
     if (!company) return res.status(404).json({ error: 'Company not found' });
     // Fetch user details for all notifications
     // Format notifications for frontend. Use populated user/project when available, otherwise fall back to snapshots
-    const data = (company.completedNotifications || []).map(n => ({
-      id: n._id,
-      submissionId: n.submission?._id || (n.submission && n.submission),
-      userId: n.userId,
-      user: n.user ? { userId: n.user.userId, fullName: n.user.fullName, email: n.user.email, skills: n.user.skills, github: n.user.github } : (n.userInfo || {}),
-      project: n.project ? { id: n.project._id, name: n.project.name, summary: n.project.summary, description: n.project.description, estimatedTime: n.project.estimatedTime, volunteerHours: n.project.volunteerHours, githubUrl: n.project.githubUrl, imageUrl: n.project.imageUrl, requiredSkills: n.project.requiredSkills } : (n.projectInfo || {}),
-      requestedAt: n.requestedAt,
-      status: n.status,
-      reviewedAt: n.reviewedAt,
-      reviewer: n.reviewer,
-      rejectReason: n.rejectReason
-    }));
-    res.json({ data });
+    const pendingNotifications = (company.completedNotifications || []).filter(n => n.status === 'pending');
+    const data = pendingNotifications.map(n => ({
+       id: n._id,
+       submissionId: n.submission?._id || (n.submission && n.submission),
+       userId: n.userId,
+       user: n.user ? { userId: n.user.userId, fullName: n.user.fullName, email: n.user.email, skills: n.user.skills, github: n.user.github } : (n.userInfo || {}),
+       project: n.project ? { id: n.project._id, name: n.project.name, summary: n.project.summary, description: n.project.description, estimatedTime: n.project.estimatedTime, volunteerHours: n.project.volunteerHours, githubUrl: n.project.githubUrl, imageUrl: n.project.imageUrl, requiredSkills: n.project.requiredSkills } : (n.projectInfo || {}),
+       requestedAt: n.requestedAt,
+       status: n.status,
+       reviewedAt: n.reviewedAt,
+       reviewer: n.reviewer,
+       rejectReason: n.rejectReason
+     }));
+     res.json({ data });
   } catch (err) {
     console.error('Failed to list company completed notifications', err);
     res.status(500).json({ error: 'Failed to list company completed notifications' });
@@ -254,6 +293,28 @@ router.post('/submissions/:id/complete-request', async (req, res) => {
     submission.completionRequested = true;
     submission.completionRequestedAt = new Date();
     await submission.save();
+    // Persist completionRequested on the user's currentProjects entry so 'In Progress' reflects the request
+    try {
+      const User = require('../models/User');
+      const user = await User.findOne({ userId: submission.userId });
+      if (user) {
+        let changed = false;
+        if (Array.isArray(user.currentProjects) && user.currentProjects.length) {
+          for (let c of user.currentProjects) {
+            if (String(c.projectId) === String(submission.project)) {
+              // set submissionId if missing and mark completion requested
+              if (!c.submissionId) { c.submissionId = submission._id; changed = true; }
+              if (!c.completionRequested) { c.completionRequested = true; changed = true; }
+              c.completionRequestedAt = new Date();
+              changed = true;
+            }
+          }
+        }
+        if (changed) await user.save();
+      }
+    } catch (e) {
+      console.error('Failed to update user currentProjects for completion request', e);
+    }
     // Add a completed notification to the company, with references and snapshot info
     const project = await Project.findById(submission.project).populate('company', '_id').lean();
     const user = await require('../models/User').findOne({ userId: submission.userId }).lean();
@@ -334,7 +395,8 @@ router.get('/company/submissions', async (req, res) => {
     // find submissions for projects owned by this company
     const projects = await Project.find({ company: company._id }).select('_id name').lean();
     const projectIds = projects.map(p => p._id);
-    const submissions = await Submission.find({ project: { $in: projectIds } })
+    // only return pending submissions for company review so approved/rejected items don't reappear
+    const submissions = await Submission.find({ project: { $in: projectIds }, status: 'pending' })
       .sort({ createdAt: -1 })
       .limit(100)
       .populate('user', 'userId fullName email skills github')

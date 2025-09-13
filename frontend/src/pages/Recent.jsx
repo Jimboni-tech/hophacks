@@ -183,13 +183,15 @@ const Recent = () => {
       if (res.data && res.data.success) {
         // mark as requested in the UI but do not remove from current/completed — company will verify later
         const now = new Date().toISOString();
+        // capture submission id from server response when available
+        const submissionId = (res.data && (res.data.submission?._id || res.data.submission?.id || res.data.submissionId)) || null;
         setCurrent(prev => {
-          const next = prev.map(p => p._id === project._id ? { ...p, completionRequested: true, completionRequestedAt: now } : p);
+          const next = prev.map(p => p._id === project._id ? { ...p, submissionId: p.submissionId || submissionId, completionRequested: true, completionRequestedAt: now } : p);
           try { localStorage.setItem('currentProjects', JSON.stringify(next)); } catch (e) {}
           return next;
         });
         setCompleted(prev => {
-          const next = prev.map(p => p._id === project._id ? { ...p, completionRequested: true, completionRequestedAt: now } : p);
+          const next = prev.map(p => p._id === project._id ? { ...p, submissionId: p.submissionId || submissionId, completionRequested: true, completionRequestedAt: now } : p);
           try { localStorage.setItem('completedProjects', JSON.stringify(next)); } catch (e) {}
           return next;
         });
