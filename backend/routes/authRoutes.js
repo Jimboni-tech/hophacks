@@ -180,7 +180,9 @@ router.post('/register', async (req, res) => {
         skills,
         resume: {},
         completedProjects: [],
-        interestedProjects: []
+        interestedProjects: [],
+        totalVolunteerHours: 0,
+        totalCompletedProjects: 0
       });
       console.log('Saving new user:', user);
       await user.save();

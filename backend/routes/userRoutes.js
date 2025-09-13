@@ -197,6 +197,8 @@ router.post('/user/apply/:projectId', async (req, res) => {
     // add to user's appliedProjects
     if (!user.appliedProjects.some((p) => String(p) === String(projectId))) {
       user.appliedProjects.push(projectId);
+      // increment totalApplications counter
+      user.totalApplications = (user.totalApplications || 0) + 1;
       await user.save();
     }
     // add user to Project.appliedUsers

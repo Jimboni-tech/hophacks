@@ -106,16 +106,76 @@ const ProjectSearch = () => {
                 <p className="text-xs text-gray-500">Skills: {p.requiredSkills.join(", ")}</p>
               ) : null}
               {p.estimatedTime && (
-                <p className="text-xs text-gray-500">Est. Time: {p.estimatedTime}</p>
+                <p className="text-xs text-gray-500">Est. Time: {p.estimatedMinutes ? `${Math.floor(p.estimatedMinutes/60)}h ${p.estimatedMinutes%60}m` : p.estimatedTime}{p.volunteerHours ? ` • ${p.volunteerHours} volunteer hours` : ''}</p>
               )}
               {p.description && (
                 <p className="text-sm mt-2 text-gray-700">{p.description}</p>
               )}
-              {p.githubUrl && (
-                <div className="flex gap-3 mt-2 text-sm">
-                  <a className="text-blue-600 underline" href={p.githubUrl} target="_blank" rel="noreferrer">Repository</a>
+              <div className="mt-2" style={{ display: 'flex', gap: 12 }}>
+                <div style={{ width: 96, height: 80, overflow: 'hidden', borderRadius: 8, background: 'var(--accent-200)' }}>
+                  <img src={p.imageUrl || p.company?.logo || '/vite.svg'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} alt={p.name} />
                 </div>
-              )}
+                <div style={{ flex: 1 }}>
+                  {p.githubUrl && (() => {
+                    try {
+                      const curStr = localStorage.getItem('currentProjects');
+                      if (curStr) {
+                        const arr = JSON.parse(curStr || '[]');
+                        if (Array.isArray(arr) && arr.some(i => String(i._id) === String(p._id))) {
+                          return (
+                            <div className="flex gap-3 mt-2 text-sm">
+                              <a className="text-blue-600 underline" href={p.githubUrl} target="_blank" rel="noreferrer">Repository</a>
+                            </div>
+                          );
+                        }
+                      }
+                      const userStr = localStorage.getItem('user');
+                      if (userStr) {
+                        const user = JSON.parse(userStr);
+                        if (user && Array.isArray(user.currentProjects) && user.currentProjects.some(c => String(c.projectId || c._id || c) === String(p._id))) {
+                          return (
+                            <div className="flex gap-3 mt-2 text-sm">
+                              <a className="text-blue-600 underline" href={p.githubUrl} target="_blank" rel="noreferrer">Repository</a>
+                            </div>
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      // ignore parse errors
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+              {p.githubUrl && (() => {
+                try {
+                  const curStr = localStorage.getItem('currentProjects');
+                  if (curStr) {
+                    const arr = JSON.parse(curStr || '[]');
+                    if (Array.isArray(arr) && arr.some(i => String(i._id) === String(p._id))) {
+                      return (
+                        <div className="flex gap-3 mt-2 text-sm">
+                          <a className="text-blue-600 underline" href={p.githubUrl} target="_blank" rel="noreferrer">Repository</a>
+                        </div>
+                      );
+                    }
+                  }
+                  const userStr = localStorage.getItem('user');
+                  if (userStr) {
+                    const user = JSON.parse(userStr);
+                    if (user && Array.isArray(user.currentProjects) && user.currentProjects.some(c => String(c.projectId || c._id || c) === String(p._id))) {
+                      return (
+                        <div className="flex gap-3 mt-2 text-sm">
+                          <a className="text-blue-600 underline" href={p.githubUrl} target="_blank" rel="noreferrer">Repository</a>
+                        </div>
+                      );
+                    }
+                  }
+                } catch (e) {
+                  // ignore parse errors
+                }
+                return null;
+              })()}
               <SubmissionForm projectId={p._id} />
             </li>
           ))

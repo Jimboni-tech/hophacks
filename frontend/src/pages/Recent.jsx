@@ -28,6 +28,9 @@ const Recent = () => {
           comp = [];
         }
         const token = localStorage.getItem('token');
+        // listen for profile refresh events (dispatched after confirmations)
+        const onUserRefreshed = () => { fetchLists(); };
+        window.addEventListener('hophacks:user-refreshed', onUserRefreshed);
         if (!token) {
           setSaved([]);
           setApplied([]);
@@ -56,6 +59,11 @@ const Recent = () => {
         // prefer server-side currentProjects if available (keeps devices in sync)
         if (Array.isArray(user.currentProjects) && user.currentProjects.length > 0) {
           cur = user.currentProjects.map(c => ({ _id: String(c.projectId), submissionId: c.submissionId || null, movedAt: c.movedAt, completionRequested: c.completionRequested || false, completionRequestedAt: c.completionRequestedAt || null }));
+        }
+        // prefer server-side completedProjects if available so Recent shows canonical completed items
+        if (Array.isArray(user.completedProjects) && user.completedProjects.length > 0) {
+          // completedProjects on the server is an array of project ObjectIds; normalize to string ids
+          comp = user.completedProjects.map(p => ({ _id: String(p) }));
         }
 
         // fetch user submissions which include status and project details
@@ -209,7 +217,7 @@ const Recent = () => {
             {current.map(p => (
               <li key={p._id} style={{marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <div style={{flex: 1, paddingRight: 12}}>
-                  <Link to={`/projects/${p._id}`}>{p.name}</Link>
+                  <Link to={`/current/${p._id}`}>{p.name}</Link>
                     <div style={{fontSize: 13, color: '#666'}}>{(p.description || '').slice(0, 160)}{p.description && p.description.length > 160 ? '…' : ''}</div>
                 </div>
                   <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
@@ -283,6 +291,7 @@ const Recent = () => {
     </div>
   );
 };
+
 
 export default Recent;
 

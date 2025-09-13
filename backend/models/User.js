@@ -28,6 +28,9 @@ const userSchema = new mongoose.Schema({
     completionRequested: { type: Boolean, default: false },
     completionRequestedAt: { type: Date }
   }],
+  totalVolunteerHours: { type: Number, default: 0 },
+  totalCompletedProjects: { type: Number, default: 0 },
+  totalApplications: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
 

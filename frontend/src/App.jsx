@@ -21,6 +21,8 @@ import CompanyLogin from './pages/company/CompanyLogin';
 import ManageProjects from './pages/company/ManageProjects';
 import ReviewApplicants from './pages/company/ReviewApplicants';
 import CompanyProfile from './pages/company/CompanyProfile';
+import CurrentProject from './pages/CurrentProject';
+import Confirm from './pages/Confirm';
 
 function App() {
   return (
@@ -34,6 +36,8 @@ function App() {
           <Route path="/organizations/:id" element={<ProtectedRoute><OrganizationDetail /></ProtectedRoute>} />
           <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
           <Route path="/recent" element={<ProtectedRoute><Recent /></ProtectedRoute>} />
+          <Route path="/current/:id" element={<ProtectedRoute><CurrentProject /></ProtectedRoute>} />
+          <Route path="/confirm/:id" element={<Confirm />} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/setup-profile" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
           <Route path="/recommendations" element={<ProtectedRoute><Recommendations /></ProtectedRoute>} />

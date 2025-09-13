@@ -4,6 +4,7 @@ const Project = require('../models/Project');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Company = require('../models/Company');
+const User = require('../models/User');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 // GET /api/projects
@@ -51,7 +52,66 @@ router.get('/projects', async (req, res) => {
       .limit(pageSize)
       .lean();
 
-    res.json({ data, page: pageNum, pageSize, total, totalPages });
+    // If requester is a user, reveal githubUrl only for projects in their currentProjects.
+    try {
+      const auth = req.headers.authorization || '';
+      let payload = null;
+      if (auth.startsWith('Bearer ')) {
+        const token = auth.slice('Bearer '.length);
+        try { payload = jwt.verify(token, JWT_SECRET); } catch (e) { payload = null; }
+      }
+      // build set of allowed project ids for this requester
+      const allowed = new Set();
+      let isCompany = false;
+      let companyId = null;
+      if (payload) {
+        if (payload.company && payload.companyId) {
+          isCompany = true;
+          companyId = payload.companyId;
+        } else if (payload.userId) {
+          try {
+            const user = await User.findOne({ userId: payload.userId }).select('currentProjects').lean();
+            if (user && Array.isArray(user.currentProjects)) {
+              for (const c of user.currentProjects) {
+                const pid = String(c.projectId || c._id || c);
+                allowed.add(pid);
+              }
+            }
+          } catch (e) {
+            // ignore user lookup errors
+          }
+        }
+      }
+
+      let ownerCompanyObjectId = null;
+      if (isCompany && companyId) {
+        try {
+          const comp = await Company.findOne({ companyId }).select('_id').lean();
+          if (comp) ownerCompanyObjectId = String(comp._id);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      const sanitized = data.map((proj) => {
+        // allow company owner to see their repos
+        if (ownerCompanyObjectId && proj.company && String(proj.company._id || proj.company) === ownerCompanyObjectId) {
+          return proj;
+        }
+        // allow if project id is in allowed set
+        if (allowed.has(String(proj._id))) return proj;
+        // otherwise hide githubUrl
+        const copy = { ...proj };
+        delete copy.githubUrl;
+        return copy;
+      });
+      return res.json({ data: sanitized, page: pageNum, pageSize, total, totalPages });
+    } catch (e) {
+      console.error('Failed to sanitize project list based on user permissions', e);
+      // fallback: strip githubUrl from all projects for safety
+      const stripped = data.map(p => { const c = { ...p }; delete c.githubUrl; return c; });
+      return res.json({ data: stripped, page: pageNum, pageSize, total, totalPages });
+    }
   } catch (err) {
     console.error('Failed to fetch projects', err);
     res.status(500).json({ error: 'Failed to fetch projects' });
@@ -62,9 +122,40 @@ router.get('/projects', async (req, res) => {
 router.get('/projects/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const project = await Project.findById(id).populate('company');
+    const project = await Project.findById(id).populate('company').lean();
     if (!project) return res.status(404).json({ error: 'Project not found' });
-    res.json(project);
+
+    try {
+      const auth = req.headers.authorization || '';
+      let payload = null;
+      if (auth.startsWith('Bearer ')) {
+        const token = auth.slice('Bearer '.length);
+        try { payload = jwt.verify(token, JWT_SECRET); } catch (e) { payload = null; }
+      }
+      // company owner can see their own project's repo
+      if (payload && payload.company && payload.companyId) {
+        const company = await Company.findOne({ companyId: payload.companyId }).select('_id').lean();
+        if (company && String(project.company?._id || project.company) === String(company._id)) {
+          return res.json(project);
+        }
+      }
+      // user must have this project in their currentProjects to see githubUrl
+      if (payload && payload.userId) {
+        const user = await User.findOne({ userId: payload.userId }).select('currentProjects').lean();
+        if (user && Array.isArray(user.currentProjects) && user.currentProjects.some(c => String(c.projectId || c._id || c) === String(project._id))) {
+          return res.json(project);
+        }
+      }
+      // otherwise, hide the githubUrl field
+      const copy = { ...project };
+      delete copy.githubUrl;
+      return res.json(copy);
+    } catch (e) {
+      console.error('Failed to sanitize project detail based on permissions', e);
+      const copy = { ...project };
+      delete copy.githubUrl;
+      return res.json(copy);
+    }
   } catch (err) {
     console.error('Failed to fetch project by id', err);
     res.status(500).json({ error: 'Failed to fetch project' });
@@ -89,10 +180,13 @@ router.post('/projects', async (req, res) => {
     const company = await Company.findOne({ companyId: payload.companyId });
     if (!company) return res.status(404).json({ error: 'Company not found' });
 
-    const { name, description, requiredSkills = [], estimatedTime } = req.body;
+  const { name, description, summary, requiredSkills = [], estimatedTime, githubUrl, estimatedMinutes, volunteerHours, imageUrl } = req.body;
     if (!name) return res.status(400).json({ error: 'Project name is required' });
+    if (!summary || String(summary).trim().length < 10) return res.status(400).json({ error: 'Project summary is required (one or two sentences)' });
+  if (!githubUrl || !String(githubUrl).includes('github.com')) return res.status(400).json({ error: 'A valid GitHub repository URL is required' });
+  if (!imageUrl || !/^https?:\/\//i.test(String(imageUrl))) return res.status(400).json({ error: 'A valid imageUrl (http/https) is required' });
 
-    const project = new Project({ name, description, requiredSkills, estimatedTime, company: company._id });
+  const project = new Project({ name, description, summary, requiredSkills, estimatedTime, estimatedMinutes: estimatedMinutes ? Number(estimatedMinutes) : null, volunteerHours: volunteerHours ? Number(volunteerHours) : 0, company: company._id, githubUrl, imageUrl });
     await project.save();
 
     // attach to company.projects

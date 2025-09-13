@@ -54,8 +54,7 @@ const Stats = () => {
       <div style={{ background: '#fff', borderRadius: 8, padding: 20, boxShadow: '0 6px 18px rgba(15,23,42,0.06)' }}>
         {active === 'personal' ? (
           <section aria-label="Personal stats">
-            <h2 style={{ marginTop: 0 }}>Your Personal Stats</h2>
-            <p>Show user-specific metrics here: contributions, applied projects, matches, etc.</p>
+            <PersonalHeader />
             <PersonalContribs />
           </section>
         ) : (
@@ -75,6 +74,7 @@ export default Stats;
 function PersonalContribs() {
   const [counts, setCounts] = useState({});
   const [since, setSince] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [yearMonth, setYearMonth] = useState(() => {
     const t = new Date();
     return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
@@ -93,7 +93,12 @@ function PersonalContribs() {
         const end = new Date(Date.UTC(y, m, 0)); // last day of month
         const startIso = start.toISOString().slice(0, 10);
         const endIso = end.toISOString().slice(0, 10);
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/stats/contributions?start=${startIso}&end=${endIso}`, {
+  // use verified completions so the graph reflects actual completed projects
+  // normalize API base so we don't accidentally have double `/api` in the URL
+  const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+  const endpoint = base.endsWith('/api') ? `${base}` : `${base}/api`;
+  const url = `${endpoint}/stats/completions?type=verified&start=${startIso}&end=${endIso}`;
+        const res = await fetch(url, {
           headers: { Authorization: token ? `Bearer ${token}` : '' }
         });
         if (!res.ok) throw new Error('Failed to load contributions');
@@ -105,8 +110,32 @@ function PersonalContribs() {
         // ignore for now
       }
     })();
+    const onUserRefreshed = () => { if (mounted) setReloadKey(k => k + 1); };
+    window.addEventListener('hophacks:user-refreshed', onUserRefreshed);
+    return () => { mounted = false; window.removeEventListener('hophacks:user-refreshed', onUserRefreshed); };
+  }, [yearMonth, reloadKey]);
+
+  // fetch user totals (totalVolunteerHours and totalCompletedProjects)
+  const [totals, setTotals] = React.useState({ totalVolunteerHours: 0, totalCompletedProjects: 0, totalApplications: 0 });
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+        const endpoint = base.endsWith('/api') ? `${base}` : `${base}/api`;
+        const res = await fetch(`${endpoint}/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!mounted) return;
+        setTotals({ totalVolunteerHours: j.totalVolunteerHours || 0, totalCompletedProjects: j.totalCompletedProjects || (j.completedProjects || []).length || 0, totalApplications: j.totalApplications || 0 });
+      } catch (e) {
+        // ignore
+      }
+    })();
     return () => { mounted = false; };
-  }, [yearMonth]);
+  }, [reloadKey]);
 
   // build array of dates for the selected month laid out in calendar weeks
   const [ySel, mSel] = yearMonth.split('-').map((v) => parseInt(v, 10));
@@ -126,9 +155,10 @@ function PersonalContribs() {
   const getColor = (c) => {
     if (!c) return '#ebedf0';
     const t = Math.min(1, c / Math.max(1, maxCount));
-    // interpolate between light green and dark green
+    // interpolate between the background and a lighter green for max intensity
     const r1 = 237, g1 = 237, b1 = 240; // #ebedf0
-    const r2 = 16, g2 = 185, b2 = 129; // teal green
+    // lighter green target (so highs are softer)
+    const r2 = 167, g2 = 243, b2 = 208; // light mint green
     const r = Math.round(r1 + (r2 - r1) * t);
     const g = Math.round(g1 + (g2 - g1) * t);
     const b = Math.round(b1 + (b2 - b1) * t);
@@ -195,11 +225,58 @@ function PersonalContribs() {
                 fontWeight: 600
               }}
             >
-              {isInMonth && c > 0 ? c : ''}
+              {/* only color indicates contributions; numbers are hidden per design */}
+              {isInMonth && c > 0 ? '' : ''}
             </div>
           );
         })}
       </div>
+
+      <div style={{ display: 'flex', gap: 16, marginTop: 18 }}>
+        <div style={{ flex: 1, minWidth: 0, background: '#f8fafc', padding: 16, borderRadius: 8, textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: '#6b7280' }}>Total Volunteer Hours</div>
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{(totals.totalVolunteerHours || 0).toFixed(2)}</div>
+        </div>
+        <div style={{ flex: 1, minWidth: 0, background: '#f8fafc', padding: 16, borderRadius: 8, textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: '#6b7280' }}>Total Completions</div>
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{totals.totalCompletedProjects || 0}</div>
+        </div>
+        <div style={{ flex: 1, minWidth: 0, background: '#f8fafc', padding: 16, borderRadius: 8, textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: '#6b7280' }}>Total Applications</div>
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{totals.totalApplications || 0}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PersonalHeader() {
+  const [name, setName] = React.useState('');
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+        const endpoint = base.endsWith('/api') ? `${base}` : `${base}/api`;
+        const res = await fetch(`${endpoint}/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!mounted) return;
+        setName(j.fullName || j.userId || 'User');
+      } catch (e) {
+        // ignore
+      }
+    })();
+    const onUserRefreshed = () => { (async () => { try { const token = localStorage.getItem('token'); if (!token) return; const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, ''); const endpoint = base.endsWith('/api') ? `${base}` : `${base}/api`; const res = await fetch(`${endpoint}/user/profile`, { headers: { Authorization: `Bearer ${token}` } }); if (!res.ok) return; const j = await res.json(); setName(j.fullName || j.userId || 'User'); } catch (e) {} })(); };
+    window.addEventListener('hophacks:user-refreshed', onUserRefreshed);
+    return () => { mounted = false; window.removeEventListener('hophacks:user-refreshed', onUserRefreshed); };
+  }, []);
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <h2 style={{ marginTop: 0 }}>{name}, this is how much you've contributed to the community</h2>
     </div>
   );
 }

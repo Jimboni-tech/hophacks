@@ -160,7 +160,11 @@ const ReviewApplicants = () => {
                 <strong>GitHub:</strong> {profile?.github?.login ? <a href={profile.github.profileUrl} target="_blank" rel="noreferrer">{profile.github.login}</a> : '—'}
               </div>
               <div style={{ marginTop: 12 }}>
-                <button onClick={downloadResume} style={{ padding: '8px 12px', borderRadius: 6, background: 'var(--accent)', color: '#fff', border: 'none' }}>Download resume</button>
+                {profile?.hasResume ? (
+                  <button onClick={downloadResume} style={{ padding: '8px 12px', borderRadius: 6, background: 'var(--accent)', color: '#fff', border: 'none' }}>Download resume</button>
+                ) : (
+                  <div style={{ color: 'var(--muted)' }}>No resume uploaded</div>
+                )}
               </div>
             </div>
           </div>

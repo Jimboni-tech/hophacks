@@ -59,6 +59,21 @@ router.get('/submissions', async (req, res) => {
   }
 });
 
+// GET /api/submissions/:id - returns a specific submission with project info
+router.get('/submissions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const submission = await Submission.findById(id)
+      .populate({ path: 'project', select: 'name summary description estimatedMinutes volunteerHours imageUrl company' })
+      .lean();
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+    res.json(submission);
+  } catch (err) {
+    console.error('Failed to fetch submission', err && err.stack ? err.stack : err);
+    res.status(500).json({ error: 'Failed to fetch submission' });
+  }
+});
+
 // PATCH /api/submissions/:id { action: 'approve' | 'reject', reviewer, rejectReason }
 router.patch('/submissions/:id', async (req, res) => {
   try {
@@ -103,6 +118,14 @@ router.post('/submissions/:id/complete-request', async (req, res) => {
 
     submission.completionRequested = true;
     submission.completionRequestedAt = new Date();
+    // generate a one-time confirmation token
+    try {
+      submission.confirmationToken = crypto.randomBytes(20).toString('hex');
+      submission.confirmationTokenAt = new Date();
+    } catch (e) {
+      submission.confirmationToken = null;
+      submission.confirmationTokenAt = null;
+    }
     await submission.save();
     // notify the company that owns the project
     try {
@@ -111,13 +134,21 @@ router.post('/submissions/:id/complete-request', async (req, res) => {
       const userName = (user && user.fullName) || payload.userId;
       if (project && project.company && project.company.email) {
         const companyEmail = project.company.email;
-        const subject = `Completion requested for project: ${project.name}`;
+        const subject = `Completion requested: ${project.name}`;
         const projectLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/projects/${String(project._id)}`;
         const submissionLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/submissions/${String(submission._id)}`;
-        const html = `<p>The user <strong>${userName}</strong> has requested verification that they completed the project <strong>${project.name}</strong>.</p>
-        <p>Project: <a href="${projectLink}">${project.name}</a></p>
-        <p>Submission: <a href="${submissionLink}">View submission</a></p>
-        <p>Please review the submission and verify completion in your dashboard.</p>`;
+  const confirmLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/confirm/${String(submission._id)}?token=${submission.confirmationToken}`;
+        const html = `
+          <h2>Completion Requested</h2>
+          <p>The user <strong>${userName}</strong> has requested verification that they completed the project <strong>${project.name}</strong>.</p>
+          <h3>Project Summary</h3>
+          <p><strong>${project.name}</strong></p>
+          <p>${project.summary || project.description || 'No description provided.'}</p>
+          <p>Project page: <a href="${projectLink}">${projectLink}</a></p>
+          <h3>Submission</h3>
+          <p>View submission: <a href="${submissionLink}">Submission details</a></p>
+          <p><a href="${confirmLink}">Confirm completion</a> — clicking this will mark the submission as verified and move the project to the user's completed list.</p>
+        `;
         // send email (best-effort)
         const sent = await sendMail({ to: companyEmail, subject, html });
         if (sent && sent.previewUrl) console.log('Preview email URL:', sent.previewUrl);
@@ -216,11 +247,12 @@ router.get('/company/applicant/:userId', async (req, res) => {
     if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can access this endpoint' });
 
     const { userId } = req.params;
-    const user = await User.findOne({ userId }).select('userId fullName email skills github resume').lean();
-    if (!user) return res.status(404).json({ error: 'Applicant not found' });
-    // don't return the binary resume data here; provide a separate resume endpoint
-    const { resume, ...rest } = user;
-    return res.json({ data: rest });
+  const user = await User.findOne({ userId }).select('userId fullName email skills github resume').lean();
+  if (!user) return res.status(404).json({ error: 'Applicant not found' });
+  // don't return the binary resume data here; provide a separate resume endpoint
+  const { resume, ...rest } = user;
+  const hasResume = !!(resume && (resume.data || resume.filename));
+  return res.json({ data: { ...rest, hasResume } });
   } catch (err) {
     console.error('Failed to fetch applicant profile', err);
     return res.status(500).json({ error: 'Failed to fetch applicant profile' });
@@ -254,5 +286,112 @@ router.get('/company/applicant/:userId/resume', async (req, res) => {
   }
 });
 
+// PATCH /api/submissions/:id/verify - company confirms completion of a submission
+router.patch('/submissions/:id/verify', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing or invalid authorization' });
+    const token = auth.slice('Bearer '.length);
+    let payload;
+    try { payload = jwt.verify(token, JWT_SECRET); } catch (e) { return res.status(401).json({ error: 'Invalid token' }); }
+    if (!payload.company || !payload.companyId) return res.status(403).json({ error: 'Only companies can verify completions' });
+
+    const { id } = req.params;
+    const submission = await Submission.findById(id);
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    // ensure the company owns the project
+    const project = await Project.findById(submission.project).populate('company').lean();
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    const company = await Company.findOne({ companyId: payload.companyId });
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    if (String(project.company?._id || project.company) !== String(company._id)) return res.status(403).json({ error: 'Not authorized for this project' });
+
+    // mark submission verified
+    submission.completionVerified = true;
+    submission.completionVerifiedAt = new Date();
+    submission.completionVerifier = payload.companyId || 'company';
+    await submission.save();
+
+    // update the user: add project to completedProjects and increment totals
+    const user = await User.findOne({ userId: submission.userId });
+    if (user) {
+      // remove from currentProjects if present
+      if (Array.isArray(user.currentProjects) && user.currentProjects.length) {
+        user.currentProjects = user.currentProjects.filter(c => String(c.projectId || c._id || c) !== String(project._id));
+      }
+      const has = (user.completedProjects || []).some(p => String(p) === String(project._id));
+      if (!has) {
+        user.completedProjects = user.completedProjects || [];
+        user.completedProjects.push(project._id);
+        user.totalCompletedProjects = (user.totalCompletedProjects || 0) + 1;
+        const minutes = project.estimatedMinutes ? Number(project.estimatedMinutes) : 0;
+        const hours = minutes ? (minutes / 60) : (project.volunteerHours || 0);
+        user.totalVolunteerHours = (user.totalVolunteerHours || 0) + (hours || 0);
+      }
+      await user.save();
+    }
+
+    return res.json({ success: true, submission });
+  } catch (err) {
+    console.error('Failed to verify submission completion', err && err.stack ? err.stack : err);
+    return res.status(500).json({ error: 'Failed to verify submission completion' });
+  }
+});
+
+// POST /api/submissions/:id/confirm - public one-time confirmation via token
+router.post('/submissions/:id/confirm', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { token } = req.body || {};
+    if (!token) return res.status(400).json({ error: 'Confirmation token required' });
+
+    const submission = await Submission.findById(id);
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+    if (!submission.confirmationToken || submission.confirmationToken !== token) return res.status(403).json({ error: 'Invalid confirmation token' });
+
+    // optional: token expiry (e.g., 7 days)
+    const expiryDays = 30;
+    if (submission.confirmationTokenAt && ((Date.now() - new Date(submission.confirmationTokenAt).getTime()) > (expiryDays * 24 * 60 * 60 * 1000))) {
+      return res.status(410).json({ error: 'Confirmation token expired' });
+    }
+
+    // perform verification (mark submission and update user)
+    submission.completionVerified = true;
+    submission.completionVerifiedAt = new Date();
+    submission.completionVerifier = 'public-link';
+    // consume the token
+    submission.confirmationToken = null;
+    submission.confirmationTokenAt = null;
+    await submission.save();
+
+    // update user record
+    const project = await Project.findById(submission.project).lean();
+    const user = await User.findOne({ userId: submission.userId });
+    if (user && project) {
+      // remove from currentProjects if present
+      if (Array.isArray(user.currentProjects) && user.currentProjects.length) {
+        user.currentProjects = user.currentProjects.filter(c => String(c.projectId || c._id || c) !== String(project._id));
+      }
+      const has = (user.completedProjects || []).some(p => String(p) === String(project._id));
+      if (!has) {
+        user.completedProjects = user.completedProjects || [];
+        user.completedProjects.push(project._id);
+        user.totalCompletedProjects = (user.totalCompletedProjects || 0) + 1;
+        const minutes = project.estimatedMinutes ? Number(project.estimatedMinutes) : 0;
+        const hours = minutes ? (minutes / 60) : (project.volunteerHours || 0);
+        user.totalVolunteerHours = (user.totalVolunteerHours || 0) + (hours || 0);
+      }
+      await user.save();
+    }
+
+    return res.json({ success: true, submission });
+  } catch (err) {
+    console.error('Failed to confirm submission via token', err && err.stack ? err.stack : err);
+    return res.status(500).json({ error: 'Failed to confirm submission' });
+  }
+});
+
 module.exports = router;
+
 

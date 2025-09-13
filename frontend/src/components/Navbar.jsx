@@ -152,7 +152,7 @@ const Navbar = () => {
             <>
               <NavLink to="/home" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Home</NavLink>
               <NavLink to="/organizations" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Organizations</NavLink>
-              <NavLink to="/recent" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Recents</NavLink>
+              <NavLink to="/recent" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>My Projects</NavLink>
               <NavLink to="/stats" style={({ isActive }) => ({ ...linkStyle, color: isActive ? 'var(--accent)' : 'var(--text)' })}>Stats</NavLink>
             </>
           ) : (

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const ProjectInformation = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -13,7 +14,9 @@ const ProjectInformation = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const res = await axios.get(`${API_URL}/projects/${id}`);
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get(`${API_URL}/projects/${id}`, { headers });
         setProject(res.data);
         // no automatic marking on load — explicit actions only
       } catch (err) {
@@ -31,10 +34,17 @@ const ProjectInformation = () => {
 
   return (
     <div style={{ maxWidth: 700, margin: '40px auto', padding: 24 }}>
-  <Link to="/home">← Back to Home</Link>
+  <button onClick={() => navigate(-1)}>← Back</button>
       <h2>{project.name}</h2>
-      <p>{project.description}</p>
-      <div><strong>Estimated Time:</strong> {project.estimatedTime}</div>
+      {project.imageUrl && (
+        <div style={{ width: '100%', height: 220, overflow: 'hidden', borderRadius: 8, margin: '12px 0' }}>
+          <img src={project.imageUrl} alt={project.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      )}
+  {project.summary && <p style={{ fontWeight: 600 }}>{project.summary}</p>}
+  <p>{project.description}</p>
+      <div><strong>Estimated Time:</strong> {project.estimatedMinutes ? `${Math.floor(project.estimatedMinutes/60)}h ${project.estimatedMinutes%60}m` : project.estimatedTime}</div>
+      {project.volunteerHours ? (<div><strong>Volunteer Hours:</strong> {project.volunteerHours}</div>) : null}
       <div><strong>Required Skills:</strong> {project.requiredSkills?.join(', ')}</div>
       {project.company && (
         <div style={{ margin: '12px 0', fontStyle: 'italic' }}>
@@ -46,9 +56,29 @@ const ProjectInformation = () => {
           )}
         </div>
       )}
-      {project.githubUrl && (
-        <div><strong>Repository:</strong> <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">{project.githubUrl}</a></div>
-      )}
+      {project.githubUrl && (() => {
+        try {
+          // prefer explicit persisted currentProjects list
+          const curStr = localStorage.getItem('currentProjects');
+          if (curStr) {
+            const arr = JSON.parse(curStr || '[]');
+            if (Array.isArray(arr) && arr.some(i => String(i._id) === String(project._id))) {
+              return (<div><strong>Repository:</strong> <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">{project.githubUrl}</a></div>);
+            }
+          }
+          // fallback: check user profile stored in localStorage
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user && Array.isArray(user.currentProjects) && user.currentProjects.some(c => String(c.projectId || c._id || c) === String(project._id))) {
+              return (<div><strong>Repository:</strong> <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">{project.githubUrl}</a></div>);
+            }
+          }
+        } catch (e) {
+          // ignore parse errors and hide repo by default
+        }
+        return null;
+      })()}
       <div style={{ marginTop: 24 }}>
         <strong>Interested Users:</strong> {project.interestedUsers?.length || 0}
       </div>

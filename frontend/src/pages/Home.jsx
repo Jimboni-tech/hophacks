@@ -116,8 +116,15 @@ const Home = () => {
 
 // This component is correct from the previous fix.
 function SimpleProjectCard({ project, isWide }) {
-    // portrait/tall card
-    const cardHeight = 260;
+    // portrait/tall card — slightly taller to better show images
+    const cardHeight = 320;
+    const formatMinutes = (mins) => {
+        if (!mins && mins !== 0) return '';
+        const m = Number(mins) || 0;
+        const h = Math.floor(m / 60);
+        const mm = m % 60;
+        return h > 0 ? `${h}h ${mm}m` : `${mm}m`;
+    };
     return (
         <Link
             to={`/projects/${project._id}`}
@@ -137,16 +144,16 @@ function SimpleProjectCard({ project, isWide }) {
                 boxShadow: '0 4px 12px rgba(0,0,0,0.04)'
             }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ width: '100%', height: 96, borderRadius: 8, overflow: 'hidden', background: 'var(--accent-200)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src={project.company?.logo || '/vite.svg'} alt={project.company?.name || ''} style={{ maxHeight: '86px', maxWidth: '100%', objectFit: 'contain' }} />
+                    <div style={{ width: '100%', height: 140, borderRadius: 8, overflow: 'hidden', background: 'var(--accent-200)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img src={project.imageUrl || project.company?.logo || '/vite.svg'} alt={project.company?.name || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     </div>
                     <div>
                         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</div>
-                        <div style={{ color: 'var(--muted)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{project.company?.name || ''} — {project.description}</div>
+                        <div style={{ color: 'var(--muted)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{project.company?.name || ''} — {project.summary || project.description}</div>
                     </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                    <div style={{ color: 'var(--muted)', fontSize: 13 }}>{project.duration || ''}</div>
+                    <div style={{ color: 'var(--muted)', fontSize: 13 }}>{project.estimatedMinutes ? formatMinutes(project.estimatedMinutes) : (project.duration || '')}{project.volunteerHours ? ` • ${project.volunteerHours} volunteer hours` : ''}</div>
                     <div style={{ display: 'flex', gap: 8 }}>
                         <button style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 8, cursor: 'pointer' }}>View</button>
                         <button style={{ background: 'transparent', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: 8, cursor: 'pointer' }}>Save</button>

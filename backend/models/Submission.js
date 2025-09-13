@@ -17,6 +17,9 @@ const submissionSchema = new mongoose.Schema({
   completionVerified: { type: Boolean, default: false },
   completionVerifiedAt: { type: Date },
   completionVerifier: { type: String },
+  // allow public confirmation links via a one-time token
+  confirmationToken: { type: String, index: true },
+  confirmationTokenAt: { type: Date },
 }, { timestamps: true });
 
 const Submission = mongoose.model('Submission', submissionSchema);

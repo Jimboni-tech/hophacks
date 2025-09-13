@@ -24,7 +24,29 @@ router.post('/users/:userId/complete', async (req, res) => {
     // Add project to completedProjects if not already present
     if (!user.completedProjects.includes(project._id)) {
       user.completedProjects.push(project._id);
+      // increment totalCompletedProjects
+      user.totalCompletedProjects = (user.totalCompletedProjects || 0) + 1;
     }
+
+    // Try to increment volunteer hours: prefer explicit `hours` in body, otherwise attempt to parse project's estimatedTime
+    let addedHours = 0;
+    if (req.body && typeof req.body.hours === 'number' && !Number.isNaN(req.body.hours)) {
+      addedHours = Math.max(0, req.body.hours);
+    } else if (project.estimatedTime && typeof project.estimatedTime === 'string') {
+      // crude parse: look for a number in the string (e.g., '10 hours', '2 weeks')
+      const m = project.estimatedTime.match(/(\d+(?:\.\d+)?)/);
+      if (m && m[1]) {
+        const val = parseFloat(m[1]);
+        // if unit contains 'week' assume 40 hours/week; 'day' assume 8 hours/day; else treat as hours
+        if (/week/i.test(project.estimatedTime)) addedHours = val * 40;
+        else if (/day/i.test(project.estimatedTime)) addedHours = val * 8;
+        else addedHours = val;
+      }
+    }
+    if (addedHours > 0) {
+      user.totalVolunteerHours = (user.totalVolunteerHours || 0) + addedHours;
+    }
+
     await user.save();
 
     res.json({ message: 'Project marked as completed for user.', user });
