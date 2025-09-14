@@ -8,6 +8,7 @@ const navStyle = {
   height: '64px',
   display: 'flex',
   alignItems: 'center',
+  justifyContent: 'space-between',
   position: 'fixed',
   top: 0,
   left: 0,
@@ -126,10 +127,12 @@ const Navbar = () => {
 
   return (
     <nav style={{ ...navStyle, padding: '12px 32px', display: 'flex', alignItems: 'center', position: 'fixed' }}>
-      {/* left greeting */}
-      <div style={{ position: 'absolute', left: 20, display: 'flex', alignItems: 'center', height: '64px' }}>
-        <span style={{ fontSize: 16, color: 'var(--muted)', display: 'flex', alignItems: 'center', height: '64px' }}>{`Hello${fullName ? `, ${fullName}` : ''}`}</span>
-      </div>
+      {/* left greeting (hide for company sessions) */}
+      {!isCompanySession && (
+        <div style={{ position: 'absolute', left: 24, display: 'flex', alignItems: 'center', height: '64px' }}>
+          <span style={{ fontSize: 18, color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', height: '64px' }}>{`Hello${fullName ? `, ${fullName}` : ''}`}</span>
+        </div>
+      )}
 
         <div
           style={{
@@ -165,7 +168,7 @@ const Navbar = () => {
         </div>
 
         {/* profile icon slightly inset from the right edge */}
-      <div style={{ position: 'absolute', right: 100, display: 'flex', alignItems: 'center', height: '64px', zIndex: 1100, overflow: 'visible' }}>
+      <div style={{ position: 'absolute', right: 90, display: 'flex', alignItems: 'center', height: '64px', zIndex: 1100, overflow: 'visible' }}>
         <NavLink to={isCompanySession ? '/company/profile' : '/profile'} aria-label="Profile" style={{ color: 'var(--accent-600)', display: 'inline-flex', alignItems: 'center', height: '64px' }}>
           {Icon ? <Icon size={36} color="var(--accent-600)" /> : <FallbackIcon size={36} />}
         </NavLink>

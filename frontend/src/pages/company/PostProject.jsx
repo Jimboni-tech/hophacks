@@ -48,49 +48,54 @@ const PostProject = () => {
     }
   };
 
+  const fieldStyle = { width: '100%', padding: '14px 16px', borderRadius: 10, border: '1px solid var(--border)', fontSize: 16, marginTop: 8, minHeight: 44, boxSizing: 'border-box' };
+  const labelStyle = { fontWeight: 600, fontSize: 15, display: 'block', marginBottom: 6 };
+
   return (
-    <div style={{ maxWidth: 600, margin: '80px auto', padding: 32, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}>
-      <h2 style={{ textAlign: 'center', fontSize: 28, fontWeight: 700, marginBottom: 18 }}>Post a New Project</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+    <div style={{ maxWidth: 780, margin: '80px auto', padding: 36, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}>
+      <h2 style={{ textAlign: 'center', fontSize: 28, fontWeight: 700, marginBottom: 20 }}>Post a New Project</h2>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
-          <label style={{ fontWeight: 600, fontSize: 15 }}>Project Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Short, descriptive name" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 16, marginTop: 6 }} />
+          <label style={labelStyle}>Project Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Short, descriptive name" style={fieldStyle} />
         </div>
         <div>
-          <label style={{ fontWeight: 600, fontSize: 15 }}>Short Summary (1-2 sentences)</label>
-          <input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="A one or two sentence summary shown on the home page" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 16, marginTop: 6 }} />
+          <label style={labelStyle}>Short Summary (1-2 sentences)</label>
+          <input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="A one or two sentence summary shown on the home page" style={fieldStyle} />
         </div>
 
         <div>
-          <label style={{ fontWeight: 600, fontSize: 15 }}>Description</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the project, goals, and deliverables" rows={5} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 16, marginTop: 6, resize: 'vertical' }} />
+          <label style={labelStyle}>Description</label>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the project, goals, and deliverables" rows={6} style={{ ...fieldStyle, minHeight: 140, padding: '14px 16px', resize: 'vertical' }} />
         </div>
 
-        <div style={{ display: 'flex', gap: 18 }}>
+        <div style={{ display: 'flex', gap: 20 }}>
           <div style={{ flex: 1 }}>
-            <label style={{ fontWeight: 600, fontSize: 15 }}>Required Skills (comma separated)</label>
-            <input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="e.g. React, Python, data analysis" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 16, marginTop: 6 }} />
+            <label style={labelStyle}>Required Skills (comma separated)</label>
+            <input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="e.g. React, Python, data analysis" style={fieldStyle} />
           </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontWeight: 600, fontSize: 15 }}>Approximate Minutes</label>
-            <input value={estimatedMinutes} onChange={(e) => setEstimatedMinutes(e.target.value)} placeholder="Total minutes (e.g. 90)" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 16, marginTop: 6 }} />
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 18 }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontWeight: 600, fontSize: 15 }}>Image URL</label>
-            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://.../image.jpg" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 16, marginTop: 6 }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontWeight: 600, fontSize: 15 }}>Repository URL</label>
-            <input value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} placeholder="https://github.com/owner/repo" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 16, marginTop: 6 }} />
+          <div style={{ width: 220 }}>
+            <label style={labelStyle}>Approximate Minutes</label>
+            <input value={estimatedMinutes} onChange={(e) => setEstimatedMinutes(e.target.value)} placeholder="Total minutes (e.g. 90)" style={fieldStyle} />
           </div>
         </div>
 
-        {error && <div style={{ color: '#dc2626', background: '#fef2f2', borderRadius: 8, padding: '10px 14px', fontWeight: 600, fontSize: 15 }}>{error}</div>}
+        <div style={{ display: 'flex', gap: 20 }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Image URL</label>
+            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://.../image.jpg" style={fieldStyle} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Repository URL</label>
+            <input value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} placeholder="https://github.com/owner/repo" style={fieldStyle} />
+          </div>
+        </div>
 
-        <button type="submit" disabled={loading} style={{ marginTop: 10, background: '#16a34a', color: '#fff', border: 'none', padding: '12px 0', borderRadius: 10, fontWeight: 700, fontSize: 18, boxShadow: '0 2px 8px rgba(22,163,74,0.08)', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>{loading ? 'Posting...' : 'Post Project'}</button>
+        {error && <div style={{ color: '#dc2626', background: '#fef2f2', borderRadius: 8, padding: '12px 16px', fontWeight: 600, fontSize: 15 }}>{error}</div>}
+
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button type="submit" disabled={loading} style={{ marginTop: 10, background: '#16a34a', color: '#fff', border: 'none', padding: '14px 32px', borderRadius: 10, fontWeight: 700, fontSize: 18, boxShadow: '0 2px 8px rgba(22,163,74,0.08)', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>{loading ? 'Posting...' : 'Post Project'}</button>
+        </div>
       </form>
     </div>
   );

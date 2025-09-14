@@ -55,7 +55,7 @@ const LandingPage = () => {
       <section style={{ padding: '64px 20px', maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'center', alignItems: 'center' }}>
           <h1 style={{ fontSize: 40, fontWeight: 800, margin: 0, maxWidth: 750 }}>
-            Commit Code, Create Impact. One Project at a Time.
+            Commit Code, Create Impact <br />One Project at a Time.
           </h1>
           <p style={{ fontSize: 17, color: 'var(--muted)', maxWidth: 680, lineHeight: 1.6 }}>
             Connect with organizations for short but impactful GitHub projects. Build your developer portfolio with verified contributions while helping great causes move their ideas forward.
