@@ -6,7 +6,7 @@ node_modules/
 # Ignore environment files
 .env
 .env.*
-frontend/.env
+/frontend/.env
 backend/.env
 # Ignore frontend build output
 /frontend/dist
